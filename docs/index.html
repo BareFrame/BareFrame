@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BareFrame — Bare-Metal FPS &amp; Latency Optimizer for PC Gamers</title>
+  <meta name="description" content="100% free, open-source, anti-cheat safe 1-click Windows performance optimizer for competitive PC gaming. Higher FPS, locked 1% lows, automatic Restore Points, and 1-click rollback." />
+  <link rel="icon" type="image/png" href="assets/bareframe-pfp.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Full-Width Translucent Floating Chrome (scroll edge effect) -->
+  <header id="topbar" class="topbar">
+    <div class="container topbar-inner">
+      <a href="#top" class="brand" aria-label="BareFrame">
+        <img src="assets/bareframe-pfp.png" alt="" class="brand-logo-img" width="30" height="30" />
+        <span class="brand-word">BareFrame</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#preview">Preview</a>
+        <a href="#telemetry">Benchmarks</a>
+        <a href="#changes">What It Does</a>
+        <a href="#questions">FAQ</a>
+        <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="nav-tip-link">♥ Ko-fi</a>
+        <a href="#download" class="nav-pill">Download Free</a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="page-root" class="page-root">
+    <main id="top">
+      <!-- HERO: Full-display breathing room, crisp universal copy, Red + Blue atmosphere -->
+      <section class="hero">
+        <div class="container hero-stack">
+          <div class="eyebrow-pill">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Free &amp; Open-Source · Windows 10 &amp; 11 · Built for PC Gamers</span>
+          </div>
+
+          <h1 class="display">
+            Bare-metal frames.<br />
+            <span class="display-gradient">Zero mid-fight dips.</span>
+          </h1>
+
+          <p class="hero-lead">
+            Clean, verified Windows optimizations engineered for higher FPS, rock-solid 1% lows, and lower input latency — with automatic backups and 1-click full rollback.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#download" class="btn btn-primary btn-lg">Download for Windows</a>
+            <button id="btn-open-sheet" class="btn btn-blue-glass btn-lg" type="button">Inspect All 12 Tweaks</button>
+          </div>
+
+          <div class="compat-strip" aria-label="Supported games and anti-cheats">
+            <div class="compat-group">
+              <span class="compat-label">BUILT FOR</span>
+              <span class="compat-items">VALORANT · CS2 · FORTNITE · APEX · R6 SIEGE</span>
+            </div>
+            <span class="compat-sep" aria-hidden="true">|</span>
+            <div class="compat-group">
+              <span class="compat-label">ANTI-CHEAT SAFE</span>
+              <span class="compat-items">Riot Vanguard · FACEIT AC · EAC · BattlEye</span>
+            </div>
+          </div>
+
+          <p class="hero-footnote">
+            100% free forever · Automatic System Restore Point · 1-click revert · <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener">Support on Ko-fi ♥</a>
+          </p>
+        </div>
+
+        <!-- FULL-WIDTH INTERACTIVE 1-CLICK PREVIEW -->
+        <div id="preview" class="container stage-wrap">
+          <div class="app-stage" id="app-stage">
+            <div class="stage-chrome">
+              <div class="stage-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="stage-title">BareFrame v1.0 — Interactive 1-Click Preview</div>
+              <div class="stage-status" id="stage-status-chip">Ready</div>
+            </div>
+
+            <div class="stage-content">
+              <!-- Left: Live Spring Score Gauge -->
+              <div class="stage-gauge-col">
+                <div class="ring-box">
+                  <svg viewBox="0 0 160 160" class="ring-svg" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="bfRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FF2D55" />
+                        <stop offset="100%" stop-color="#0A84FF" />
+                      </linearGradient>
+                    </defs>
+                    <circle class="ring-track" cx="80" cy="80" r="66" />
+                    <circle id="demo-ring" class="ring-arc" cx="80" cy="80" r="66" stroke-dasharray="414.69" stroke-dashoffset="240.5" />
+                  </svg>
+                  <div class="ring-readout">
+                    <span id="demo-score" class="ring-num">42</span>
+                    <span class="ring-caption">BAREFRAME</span>
+                  </div>
+                </div>
+                <div id="demo-verdict" class="stage-verdict">Baseline Windows PC</div>
+                <div class="stage-hw">Auto-detects your CPU, GPU, RAM &amp; Board</div>
+              </div>
+
+              <!-- Right: 1-Click Optimize -> Continuous Progress -> Completed Breakdown -->
+              <div class="stage-action-col">
+                <div class="stage-head">
+                  <h2 id="demo-heading">Optimize your entire PC in one click.</h2>
+                  <p id="demo-desc">
+                    Creates a Windows System Restore Point and backups automatically, then applies all 12 verified optimizations and shows every completed change.
+                  </p>
+                </div>
+
+                <label class="toggle-row" for="demo-vbs-chk">
+                  <span class="toggle-copy">
+                    <strong>Include Bare-Metal Mode (Optional)</strong>
+                    <span>Disables Windows VBS &amp; Memory Integrity (+10–18% extra CPU FPS). Keeps TPM 2.0 &amp; Secure Boot ON.</span>
+                  </span>
+                  <span class="apple-switch">
+                    <input type="checkbox" id="demo-vbs-chk" checked />
+                    <span class="switch-track"><span class="switch-thumb"></span></span>
+                  </span>
+                </label>
+
+                <div class="stage-controls">
+                  <button id="btn-demo-optimize" class="btn btn-primary btn-optimize" type="button">
+                    <span class="btn-label">Preview Optimize</span>
+                  </button>
+                  <a id="btn-demo-download" href="#download" class="btn btn-blue-glass hidden">Download BareFrame →</a>
+                  <button id="btn-demo-reset" class="btn btn-subtle hidden" type="button">Reset</button>
+                </div>
+
+                <!-- Spring-driven continuous progress bar -->
+                <div id="demo-progress-wrap" class="progress-wrap hidden" aria-live="polite">
+                  <div class="progress-meta">
+                    <span id="demo-progress-text">Creating System Restore Point…</span>
+                    <span id="demo-progress-pct" class="tabular">0%</span>
+                  </div>
+                  <div class="progress-rail">
+                    <div id="demo-progress-bar" class="progress-bar"></div>
+                  </div>
+                </div>
+
+                <!-- Completed items reveal cleanly in-place -->
+                <div id="demo-done-grid" class="done-grid hidden"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REAL BENCHMARK SECTION: Widescreen + Spring Segmented Control + 1:1 Draggable Scrubber -->
+      <section id="telemetry" class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Real Benchmark Proof</span>
+            <h2 class="section-title">Measured in actual matches. Not synthetic scores.</h2>
+            <p class="section-sub">
+              Real before-and-after results captured from live competitive match logs on a mid-range gaming PC (i5-14400F + RTX 4060).
+            </p>
+          </div>
+
+          <!-- Apple-style Spring Segmented Control (interruptible mid-flight) -->
+          <div class="segmented-wrap">
+            <div class="segmented" id="bench-segmented" role="tablist" aria-label="Benchmark view">
+              <div class="segmented-thumb" id="segmented-thumb" aria-hidden="true"></div>
+              <button class="seg-btn active" role="tab" aria-selected="true" data-view="tdm">Heavy Action (TDM)</button>
+              <button class="seg-btn" role="tab" aria-selected="false" data-view="comp">5v5 Competitive</button>
+              <button class="seg-btn" role="tab" aria-selected="false" data-view="dips">Frametime &amp; Dips</button>
+            </div>
+          </div>
+
+          <div class="metrics-strip" id="metrics-strip">
+            <div class="metric-tile">
+              <div class="metric-value blue tabular" id="m-val-1">+35%</div>
+              <div class="metric-label" id="m-lbl-1">Average FPS gain</div>
+              <div class="metric-note" id="m-note-1">220 → 298 FPS in nonstop TDM</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-value red tabular" id="m-val-2">−84%</div>
+              <div class="metric-label" id="m-lbl-2">Fewer sudden FPS dips</div>
+              <div class="metric-note" id="m-note-2">Sub-240 drops cut from 32.3% to 5.2%</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-value ice tabular" id="m-val-3">94.5%</div>
+              <div class="metric-label" id="m-lbl-3">Match held above 240 FPS</div>
+              <div class="metric-note" id="m-note-3">Up from 67.2% on stock Windows</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-value tabular" id="m-val-4">4.68 ms</div>
+              <div class="metric-label" id="m-lbl-4">Average engine latency</div>
+              <div class="metric-note" id="m-note-4">0.72 ms faster response time</div>
+            </div>
+          </div>
+
+          <!-- 1:1 Direct Manipulation Scrubber (Pointer Events + Momentum Projection + Rubber-banding) -->
+          <div class="scrubber-card">
+            <div class="scrubber-head">
+              <div>
+                <h3>Drag across every optimization stage</h3>
+                <p>Grab or flick the handle left and right to see how each layer adds real FPS.</p>
+              </div>
+              <span class="scrubber-stage-pill tabular" id="scrubber-stage-pill">Stage 5 · Bare-Metal</span>
+            </div>
+
+            <div class="scrubber-readout">
+              <div>
+                <div class="scrubber-fps tabular" id="scrubber-fps">298 <small>FPS avg</small></div>
+                <div class="scrubber-caption" id="scrubber-caption">Bare-Metal Mode active · Only 5.2% frames dipped below 240 FPS · 3,652 frames over 480 FPS</div>
+              </div>
+              <div class="scrubber-delta blue tabular" id="scrubber-delta">−84% dips</div>
+            </div>
+
+            <div class="scrubber-track" id="scrubber-track" role="slider" tabindex="0" aria-label="Optimization stage" aria-valuemin="0" aria-valuemax="4" aria-valuenow="4">
+              <div class="scrubber-fill" id="scrubber-fill"></div>
+              <div class="scrubber-stops" aria-hidden="true">
+                <span>Stock</span>
+                <span>Windows</span>
+                <span>BIOS Guide</span>
+                <span>HVCI Off</span>
+                <span>Bare-Metal</span>
+              </div>
+              <div class="scrubber-knob" id="scrubber-knob" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- WHAT IT DOES: Spacious Full-Width Bento Grid -->
+      <section id="changes" class="section section-tinted">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Complete Transparency</span>
+            <h2 class="section-title">Everything tuned. Nothing hidden.</h2>
+            <p class="section-sub">
+              Every change uses documented Windows APIs — no black-box scripts, no sketchy kernel drivers, and a full rollback built in.
+            </p>
+          </div>
+
+          <div class="bento">
+            <article class="bento-card bento-wide">
+              <span class="bento-tag red-tag">Windows &amp; Latency</span>
+              <h3>Eliminate background stutter before a frame starts.</h3>
+              <p>Prioritizes active games in the Windows CPU/GPU scheduler, stabilizes kernel timer resolution, disables pointless background telemetry and RAM compression, and keeps Windows out of your way mid-match.</p>
+            </article>
+
+            <article class="bento-card">
+              <span class="bento-tag blue-tag">Bare-Metal Mode</span>
+              <h3>Unlock hidden CPU headroom.</h3>
+              <p>Optional 1-click toggle removes Windows virtualization overhead for a major CPU FPS jump while keeping TPM 2.0 &amp; Secure Boot untouched for anti-cheats.</p>
+            </article>
+
+            <article class="bento-card">
+              <span class="bento-tag blue-tag">Hardware Diagnostics</span>
+              <h3>Built-in CPU throttle detector.</h3>
+              <p>Runs a 35-second sustained clock test to catch hidden power-limit or thermal throttling, paired with an exact BIOS playbook for your motherboard.</p>
+            </article>
+
+            <article class="bento-card">
+              <span class="bento-tag red-tag">Peripherals &amp; Network</span>
+              <h3>Consistent mouse &amp; network feel.</h3>
+              <p>Stops Windows from putting USB hubs, high-polling mice, and keyboards to sleep, tunes GPU interrupts, and strips power-saving jitter from wired Ethernet.</p>
+            </article>
+
+            <article class="bento-card">
+              <span class="bento-tag blue-tag">Safety &amp; Rollback</span>
+              <h3>100% forgiving by design.</h3>
+              <p>Creates a Windows System Restore Point and timestamped backups before every run. One click reverts every single setting cleanly back to stock.</p>
+            </article>
+          </div>
+
+          <div class="center-cta">
+            <button id="btn-open-sheet-2" class="btn btn-blue-glass" type="button">Inspect All 12 Individual Tweaks</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOWNLOAD & OPTIONAL KO-FI TIP -->
+      <section id="download" class="section">
+        <div class="container">
+          <div class="download-card">
+            <div class="download-glow" aria-hidden="true"></div>
+            <div class="download-inner">
+              <span class="section-kicker">Download BareFrame v1.0</span>
+              <h2>Free forever. Engineered for players.</h2>
+              <p class="download-sub">
+                Full source code is public under the MIT license. No accounts, no subscriptions, no background bloat.
+              </p>
+              <div class="download-actions">
+                <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary btn-lg">Download Installer (.exe)</a>
+                <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Portable.exe" class="btn btn-blue-glass btn-lg">Download Portable (.exe)</a>
+              </div>
+              <div class="download-meta">Windows 10 &amp; 11 (64-bit) · ~76 MB · MIT Open-Source · <a href="https://github.com/bareframe/BareFrame/releases" target="_blank" rel="noopener" style="text-decoration:underline;">All Releases</a></div>
+
+              <div class="tip-divider"></div>
+
+              <div class="tip-inline">
+                <div class="tip-inline-copy">
+                  <strong>Enjoying smoother frames?</strong>
+                  <span>BareFrame has zero paywalls. Optional Ko-fi tips (0% platform fee) fund Windows code-signing and future updates.</span>
+                </div>
+                <div class="tip-inline-actions">
+                  <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="btn btn-tip">♥ Tip BareFrame on Ko-fi</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="questions" class="section section-tinted">
+        <div class="container faq-container">
+          <div class="section-header">
+            <span class="section-kicker">Questions</span>
+            <h2 class="section-title">Clear answers before you install.</h2>
+          </div>
+
+          <div class="faq-list">
+            <details class="faq-row" open>
+              <summary>Is BareFrame safe with Riot Vanguard, FACEIT, EAC, and BattlEye?</summary>
+              <p>Yes. BareFrame changes only documented Windows settings (registry, power plans, services, NIC properties, and user game configs). It never touches TPM 2.0, Secure Boot, game memory, or anti-cheat drivers.</p>
+            </details>
+            <details class="faq-row">
+              <summary>Can I undo everything cleanly?</summary>
+              <p>Yes. Every optimization run creates a Windows System Restore Point and saves backups to <code>Documents\BareFrame\backups\</code>. Clicking <strong>Revert All</strong> restores every setting back to stock Windows defaults.</p>
+            </details>
+            <details class="faq-row">
+              <summary>Does it work on both Intel and AMD PCs?</summary>
+              <p>Yes. BareFrame automatically detects your CPU, GPU (NVIDIA or AMD), RAM size, desktop vs. laptop battery state, and motherboard vendor — only applying optimizations that are safe and beneficial for your exact hardware.</p>
+            </details>
+            <details class="faq-row">
+              <summary>Why is BareFrame 100% free?</summary>
+              <p>Gamers shouldn't have to pay for closed-source tweak packs. BareFrame is MIT open-source so anyone can inspect every line of code, verify it's safe, and optionally leave a tip on Ko-fi if it boosts their frames.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>BareFrame · MIT License · Open-Source</span>
+        <div class="footer-links">
+          <a href="https://github.com/bareframe/BareFrame" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener">Ko-fi Tips</a>
+          <a href="#top">Back to top</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- APPLE-STYLE DRAGGABLE BOTTOM SHEET -->
+  <div id="sheet-scrim" class="sheet-scrim hidden" aria-hidden="true"></div>
+  <aside id="tweak-sheet" class="sheet hidden" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div id="sheet-handle-zone" class="sheet-handle-zone" title="Drag down to dismiss">
+      <div class="sheet-grabber"></div>
+    </div>
+    <div class="sheet-header">
+      <div>
+        <h2 id="sheet-title">All 12 Verified Optimizations</h2>
+        <p class="sheet-sub">Drag the handle downward or flick to dismiss — every item is 1-click reversible.</p>
+      </div>
+      <button id="btn-close-sheet" class="sheet-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div id="sheet-list" class="sheet-list"></div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
