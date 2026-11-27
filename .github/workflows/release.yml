@@ -32,20 +32,48 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npx electron-builder --win --publish never
 
-      # Signs Setup & Portable EXEs using Microsoft Azure Trusted Signing
-      # Add AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
-      # AZURE_SIGNING_ENDPOINT, AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE
-      # to your GitHub Repository Secrets.
+      - name: Upload unsigned build artifacts (required for SignPath verification)
+        id: upload_unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: bareframe-unsigned
+          path: |
+            dist/BareFrame-Setup.exe
+            dist/BareFrame-Portable.exe
+
       - name: Check signing configuration
         id: sign_check
         shell: pwsh
         env:
+          HAS_SIGNPATH: ${{ secrets.SIGNPATH_API_TOKEN }}
           HAS_AZURE_SIGN: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
         run: |
-          if ($env:HAS_AZURE_SIGN) { "enabled=true" >> $env:GITHUB_OUTPUT } else { "enabled=false" >> $env:GITHUB_OUTPUT }
+          if ($env:HAS_SIGNPATH) { "signpath=true" >> $env:GITHUB_OUTPUT } else { "signpath=false" >> $env:GITHUB_OUTPUT }
+          if ($env:HAS_AZURE_SIGN) { "azure=true" >> $env:GITHUB_OUTPUT } else { "azure=false" >> $env:GITHUB_OUTPUT }
 
+      # Option 1 (Free OSS EV Cert): SignPath Foundation
+      # Add SIGNPATH_API_TOKEN and SIGNPATH_ORGANIZATION_ID to GitHub Repo Secrets once approved.
+      - name: Sign Windows installers (SignPath Foundation)
+        if: steps.sign_check.outputs.signpath == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: 'bareframe'
+          signing-policy-slug: 'release-signing'
+          github-artifact-id: '${{ steps.upload_unsigned.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'dist-signed'
+
+      - name: Replace dist executables with SignPath-signed binaries
+        if: steps.sign_check.outputs.signpath == 'true'
+        shell: pwsh
+        run: |
+          Copy-Item -Path "dist-signed\*.exe" -Destination "dist\" -Force
+
+      # Option 2 (Optional): Microsoft Azure Trusted Signing
       - name: Sign Windows installers (Azure Trusted Signing)
-        if: steps.sign_check.outputs.enabled == 'true'
+        if: steps.sign_check.outputs.signpath != 'true' && steps.sign_check.outputs.azure == 'true'
         uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
