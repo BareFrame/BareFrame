@@ -53,6 +53,24 @@
           <span class="nav-icon">▶</span>
           <span>Pre-Match Boost</span>
         </button>
+
+        <!-- Update Notification directly under Pre-Match Boost (appears when a new release exists) -->
+        <div id="sidebar-update-card" class="sidebar-update-card hidden">
+          <div class="sidebar-update-head">
+            <span class="update-dot" aria-hidden="true"></span>
+            <span id="sidebar-update-ver">Update Available</span>
+          </div>
+          <button id="btn-sidebar-install-update" class="btn-sidebar-update" type="button">Install Update</button>
+          <div id="sidebar-update-prog" class="sidebar-update-prog hidden">
+            <div class="sidebar-update-meta">
+              <span id="sidebar-update-status">Downloading…</span>
+              <span id="sidebar-update-pct">0%</span>
+            </div>
+            <div class="sidebar-update-rail">
+              <div id="sidebar-update-fill" class="sidebar-update-fill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
       </nav>
 
       <div class="sidebar-footer">

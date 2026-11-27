@@ -703,6 +703,15 @@ async function runUpdateCheck(silent = false) {
       const upPill = $('btn-update-pill');
       upPill.textContent = `↑ Update v${info.latestVersion}`;
       upPill.classList.remove('hidden');
+
+      // Show prominent Install Update notification right under Pre-Match Boost
+      const sideCard = $('sidebar-update-card');
+      $('sidebar-update-ver').textContent = `New Update v${info.latestVersion}`;
+      $('btn-sidebar-install-update').textContent = 'Install Update';
+      $('btn-sidebar-install-update').disabled = false;
+      $('sidebar-update-prog').classList.add('hidden');
+      sideCard.classList.remove('hidden');
+
       if (!silent) openUpdateModal(info);
     } else if (!silent) {
       showToast(`You're on the latest version (v${info.currentVersion}).`);
@@ -727,35 +736,60 @@ function openUpdateModal(info) {
 }
 
 window.frameforge.onUpdateProgress((p) => {
+  const statusTxt = p.status || `Downloading… ${p.receivedMB} / ${p.totalMB} MB`;
+  const modalTxt = p.receivedMB > 0 && p.pct < 100 ? `Downloading… ${p.receivedMB} / ${p.totalMB} MB` : statusTxt;
+  const sideTxt = p.pct >= 100 ? 'Installing & restarting…' : `${p.receivedMB}/${p.totalMB} MB`;
+
+  // Update Modal loading bar
   $('update-progress-fill').style.width = `${p.pct}%`;
   $('update-progress-pct').textContent = `${p.pct}%`;
-  $('update-progress-text').textContent = `Downloading… ${p.receivedMB} / ${p.totalMB} MB`;
+  $('update-progress-text').textContent = modalTxt;
+
+  // Sidebar inline loading bar
+  $('sidebar-update-fill').style.width = `${p.pct}%`;
+  $('sidebar-update-pct').textContent = `${p.pct}%`;
+  $('sidebar-update-status').textContent = sideTxt;
 });
 
-$('btn-update-pill').onclick = () => {
-  if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
-};
-$('btn-check-updates').onclick = () => runUpdateCheck(false);
-$('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
-$('btn-update-install').onclick = async () => {
+async function triggerInstallUpdate() {
   if (!latestUpdateInfo || !latestUpdateInfo.downloadUrl) return;
   $('btn-update-install').disabled = true;
-  $('btn-update-install').textContent = 'Downloading…';
+  $('btn-update-install').textContent = 'Updating…';
   $('update-progress-wrap').classList.remove('hidden');
   $('update-progress-fill').style.width = '2%';
+
+  $('btn-sidebar-install-update').disabled = true;
+  $('btn-sidebar-install-update').textContent = 'Updating…';
+  $('sidebar-update-prog').classList.remove('hidden');
+  $('sidebar-update-fill').style.width = '2%';
+  $('sidebar-update-pct').textContent = '2%';
+  $('sidebar-update-status').textContent = 'Downloading…';
+
   try {
     await window.frameforge.installUpdate({
       downloadUrl: latestUpdateInfo.downloadUrl,
       latestVersion: latestUpdateInfo.latestVersion,
       isPortable: latestUpdateInfo.isPortable,
     });
-    $('update-progress-text').textContent = 'Launching installer…';
+    $('update-progress-text').textContent = 'Installing & restarting BareFrame…';
+    $('sidebar-update-status').textContent = 'Restarting…';
+    showToast('Installing update & restarting BareFrame…');
   } catch (err) {
     showToast(`Update failed: ${err.message}`);
     $('btn-update-install').disabled = false;
-    $('btn-update-install').textContent = 'Retry Download';
+    $('btn-update-install').textContent = 'Retry Update';
+    $('btn-sidebar-install-update').disabled = false;
+    $('btn-sidebar-install-update').textContent = 'Retry Update';
   }
+}
+
+$('btn-update-pill').onclick = () => {
+  if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
 };
+$('btn-sidebar-install-update').onclick = triggerInstallUpdate;
+$('btn-check-updates').onclick = () => runUpdateCheck(false);
+$('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
+$('btn-update-install').onclick = triggerInstallUpdate;
 
 // Boot sequence
 initUpdater();

@@ -799,3 +799,71 @@ details[open] > summary .expand-symbol { color: var(--crimson); }
 .console-details .console-out {
   margin: 0 16px 16px;
 }
+
+/* Sidebar Update Notification Card (directly under Pre-Match Boost) */
+.sidebar-update-card {
+  margin-top: 10px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: linear-gradient(150deg, rgba(10, 132, 255, 0.16), rgba(255, 45, 85, 0.12));
+  border: 1px solid rgba(56, 189, 248, 0.42);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar-update-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #E0F2FE;
+}
+.update-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 8px #38BDF8;
+  flex-shrink: 0;
+}
+.btn-sidebar-update {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #0A84FF, #0284C7);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s, transform 90ms ease-out;
+}
+.btn-sidebar-update:hover { filter: brightness(1.12); }
+.btn-sidebar-update:active { transform: scale(0.97); }
+.btn-sidebar-update:disabled { opacity: 0.6; cursor: not-allowed; }
+.sidebar-update-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sidebar-update-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #BAE6FD;
+  font-family: var(--mono);
+}
+.sidebar-update-rail {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.sidebar-update-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #FF2D55, #0A84FF, #38BDF8);
+  transition: width 0.2s ease;
+}

@@ -153,16 +153,61 @@ ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isP
   if (!downloadUrl || !/^https:\/\/github\.com\//i.test(downloadUrl)) {
     throw new Error('Invalid update download URL');
   }
-  const { path: exePath } = await downloadUpdate(
+  const { path: downloadedExe } = await downloadUpdate(
     downloadUrl,
     latestVersion,
     isPortable,
     app.getVersion(),
-    (prog) => mainWindow?.webContents.send('updater:progress', prog)
+    (prog) => mainWindow?.webContents.send('updater:progress', { ...prog, status: 'Downloading…' })
   );
-  // Launch the new installer/portable detached, then exit current app cleanly
-  const child = spawn(exePath, [], { detached: true, stdio: 'ignore' });
+
+  mainWindow?.webContents.send('updater:progress', {
+    pct: 100,
+    receivedMB: 0,
+    totalMB: 0,
+    status: 'Installing & restarting BareFrame…',
+  });
+
+  const esc = (p) => String(p || '').replace(/'/g, "''");
+  const currentExe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+
+  let psHandoff;
+  if (isPortable) {
+    // Wait for old portable process to exit, replace portable exe in-place if possible, then relaunch
+    psHandoff = `
+      Start-Sleep -Seconds 2
+      $src = '${esc(downloadedExe)}'
+      $dst = '${esc(currentExe)}'
+      try {
+        Copy-Item -Path $src -Destination $dst -Force -ErrorAction Stop
+        Start-Process -FilePath $dst
+      } catch {
+        Start-Process -FilePath $src
+      }
+    `;
+  } else {
+    // Wait for BareFrame to exit, run silent NSIS update (/S), then automatically relaunch BareFrame
+    psHandoff = `
+      Start-Sleep -Seconds 2
+      Start-Process -FilePath '${esc(downloadedExe)}' -ArgumentList '/S' -Wait
+      $relaunch = '${esc(currentExe)}'
+      if (-not (Test-Path $relaunch)) {
+        $relaunch = Join-Path $env:LOCALAPPDATA 'Programs\\bareframe\\BareFrame.exe'
+      }
+      if (Test-Path $relaunch) {
+        Start-Process -FilePath $relaunch
+      }
+    `;
+  }
+
+  const encoded = Buffer.from(psHandoff, 'utf16le').toString('base64');
+  const child = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded],
+    { detached: true, stdio: 'ignore', windowsHide: true }
+  );
   child.unref();
-  setTimeout(() => app.quit(), 600);
-  return { launched: true, exePath };
+
+  setTimeout(() => app.quit(), 650);
+  return { launched: true, exePath: downloadedExe };
 });
