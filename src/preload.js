@@ -5,10 +5,13 @@ contextBridge.exposeInMainWorld('frameforge', {
   maximize: () => ipcRenderer.send('win:maximize'),
   close: () => ipcRenderer.send('win:close'),
 
-  runAudit: () => ipcRenderer.invoke('audit:run'),
-  getTweaks: () => ipcRenderer.invoke('tweaks:list'),
-  applyTweaks: (ids) => ipcRenderer.invoke('tweaks:apply', ids),
-  revertTweaks: (ids) => ipcRenderer.invoke('tweaks:revert', ids),
+  getGames: () => ipcRenderer.invoke('games:list'),
+  detectGames: () => ipcRenderer.invoke('games:detect'),
+
+  runAudit: (gameId) => ipcRenderer.invoke('audit:run', gameId),
+  getTweaks: (gameId) => ipcRenderer.invoke('tweaks:list', gameId),
+  applyTweaks: (ids, gameId) => ipcRenderer.invoke('tweaks:apply', ids, gameId),
+  revertTweaks: (ids, gameId) => ipcRenderer.invoke('tweaks:revert', ids, gameId),
   onTweakLog: (cb) => {
     const handler = (_e, line) => cb(line);
     ipcRenderer.on('tweaks:log', handler);
@@ -32,8 +35,9 @@ contextBridge.exposeInMainWorld('frameforge', {
   rebootToBios: () => ipcRenderer.invoke('bios:reboot'),
   rebootWindows: () => ipcRenderer.invoke('system:reboot'),
 
-  scanHogs: () => ipcRenderer.invoke('boost:scan'),
+  scanHogs: (gameId) => ipcRenderer.invoke('boost:scan', gameId),
   purgeHogs: (names) => ipcRenderer.invoke('boost:purge', names),
+  launchGame: (gameId) => ipcRenderer.invoke('boost:launchGame', gameId),
   launchValorant: () => ipcRenderer.invoke('boost:launchValorant'),
   openBackups: () => ipcRenderer.invoke('backups:open'),
   getSupportConfig: () => ipcRenderer.invoke('support:config'),

@@ -31,7 +31,16 @@
   <div class="app-shell">
     <!-- Left Navigation Rail -->
     <aside class="sidebar">
-      <nav class="nav-list">
+      <div class="sidebar-top">
+        <button id="btn-switch-game" class="game-switcher-btn" type="button" title="Switch target game profile">
+          <div class="game-switcher-meta">
+            <span class="game-switcher-label">ACTIVE GAME</span>
+            <span id="sidebar-game-name" class="game-switcher-name">Select Game…</span>
+          </div>
+          <span class="game-switcher-action">Switch</span>
+        </button>
+
+        <nav class="nav-list">
         <button class="nav-item active" data-tab="overview">
           <span class="nav-icon">◈</span>
           <span>Live Audit</span>
@@ -72,6 +81,7 @@
           </div>
         </div>
       </nav>
+      </div>
 
       <div class="sidebar-footer">
         <div class="vanguard-pill">
@@ -90,8 +100,8 @@
       <section id="tab-overview" class="tab-panel active">
         <div class="panel-header">
           <div>
-            <h1>1-Click Bare-Metal Optimizer</h1>
-            <p class="subtitle">Automatic System Restore Point · 12 Verified Windows, Hardware &amp; Valorant Tweaks · 1-Click Full Revert</p>
+            <h1 id="overview-title">1-Click Bare-Metal Optimizer</h1>
+            <p id="overview-subtitle" class="subtitle">Automatic System Restore Point · 12 Verified Windows &amp; Game Tweaks · 1-Click Full Revert</p>
           </div>
           <div class="header-actions">
             <button id="btn-rescan" class="btn-secondary">Re-Scan PC</button>
@@ -119,15 +129,15 @@
           <div class="hero-opt-right">
             <div id="hero-idle-state">
               <h2 class="hero-cta-title">Lock Your 1% Lows. Zero OS Overhead.</h2>
-              <p class="hero-cta-desc">
-                Built for 240Hz–540Hz competitive play. Creates a System Restore Point first, then tunes Windows scheduling, timers, P-core power plans, USB/Ethernet latency, GPU MSI-X, Memory Compression, ShadowPlay, and Valorant configs automatically.
+              <p id="hero-cta-desc" class="hero-cta-desc">
+                Built for 240Hz–540Hz competitive play. Creates a System Restore Point first, then tunes Windows scheduling, timers, P-core power plans, USB/Ethernet latency, GPU MSI-X, Memory Compression, ShadowPlay, and game-specific configs automatically.
               </p>
               <label class="hero-vbs-toggle">
                 <input type="checkbox" id="chk-hero-vbs" checked />
                 <div>
                   <strong>Include Bare-Metal Mode (Disable VBS &amp; Memory Integrity)</strong>
                   <span class="pill-amber" style="margin-left:6px;">+10–18% CPU FPS</span>
-                  <div class="hero-vbs-sub">Leaves TPM 2.0 &amp; Secure Boot ON for Vanguard. Disables WSL2/Hyper-V until reverted.</div>
+                  <div id="hero-vbs-sub" class="hero-vbs-sub">Leaves TPM 2.0 &amp; Secure Boot ON for anti-cheats. Disables WSL2/Hyper-V until reverted.</div>
                 </div>
               </label>
               <div class="hero-btn-row">
@@ -262,13 +272,14 @@
       <section id="tab-telemetry" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>Valorant Match Telemetry Analyzer</h1>
-            <p class="subtitle">Parses real frame-by-frame metrics directly from your local ShooterGame*.log files</p>
+            <h1>Match Telemetry Analyzer</h1>
+            <p id="telemetry-subtitle" class="subtitle">Parses real frame-by-frame metrics directly from your local ShooterGame*.log files</p>
           </div>
           <div class="header-actions">
             <button id="btn-refresh-telemetry" class="btn-secondary">Refresh Logs</button>
           </div>
         </div>
+        <div id="telemetry-game-notice" class="card telemetry-notice hidden"></div>
 
         <div id="telemetry-kpis" class="kpi-row"></div>
         <div id="telemetry-tip-banner" class="tip-banner hidden">
@@ -348,6 +359,29 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- First-Boot / Switch Game Selector Screen -->
+  <div id="game-picker-overlay" class="game-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="game-picker-title">
+    <div class="game-picker-inner">
+      <div class="game-picker-head">
+        <div id="game-picker-kicker" class="game-picker-kicker">FIRST-TIME SETUP</div>
+        <h1 id="game-picker-title">What game are you optimizing for?</h1>
+        <p class="game-picker-sub">
+          BareFrame tailors CPU priority (IFEO), Windows Defender exclusions, config tweaks, and Pre-Match Boost for your game. You can switch profiles anytime from the sidebar.
+        </p>
+      </div>
+
+      <div id="game-picker-grid" class="game-picker-grid"></div>
+
+      <div class="game-picker-footer">
+        <div id="game-picker-selected-note" class="game-picker-note">Select a game profile to continue.</div>
+        <div class="game-picker-actions">
+          <button id="btn-game-picker-cancel" class="btn-ghost hidden" type="button">Cancel</button>
+          <button id="btn-game-picker-confirm" class="btn-primary" type="button" disabled>Continue →</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Confirmation Modal -->

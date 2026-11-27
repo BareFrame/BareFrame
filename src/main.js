@@ -5,9 +5,10 @@ const os = require('os');
 
 const { runSystemAudit } = require('./engine/audit');
 const { getTweakList, applyTweaks, revertTweaks, BACKUP_ROOT } = require('./engine/tweaks');
+const { getGameList, detectInstalledGames } = require('./engine/games');
 const { getValorantTelemetry } = require('./engine/telemetry');
 const { runThrottleTest, getBiosGuide, rebootToBios } = require('./engine/throttle');
-const { scanBackgroundHogs, purgeBackgroundHogs, launchValorant } = require('./engine/boost');
+const { scanBackgroundHogs, purgeBackgroundHogs, launchGame } = require('./engine/boost');
 const { checkForUpdate, downloadUpdate } = require('./engine/updater');
 const { runPS } = require('./engine/ps');
 const supportConfig = require('./config/support');
@@ -57,26 +58,35 @@ ipcMain.on('win:maximize', () => {
 ipcMain.on('win:close', () => mainWindow?.close());
 
 // Engine IPC
-ipcMain.handle('audit:run', async () => {
-  return runSystemAudit();
+ipcMain.handle('games:list', async () => {
+  return getGameList();
 });
 
-ipcMain.handle('tweaks:list', async () => {
-  return getTweakList();
+ipcMain.handle('games:detect', async () => {
+  return detectInstalledGames();
 });
 
-ipcMain.handle('tweaks:apply', async (_evt, ids) => {
+ipcMain.handle('audit:run', async (_evt, gameId) => {
+  return runSystemAudit(gameId);
+});
+
+ipcMain.handle('tweaks:list', async (_evt, gameId) => {
+  return getTweakList(gameId);
+});
+
+ipcMain.handle('tweaks:apply', async (_evt, ids, gameId) => {
   return applyTweaks(
     ids,
     (line) => mainWindow?.webContents.send('tweaks:log', line),
-    (prog) => mainWindow?.webContents.send('tweaks:progress', prog)
+    (prog) => mainWindow?.webContents.send('tweaks:progress', prog),
+    gameId
   );
 });
 
-ipcMain.handle('tweaks:revert', async (_evt, ids) => {
+ipcMain.handle('tweaks:revert', async (_evt, ids, gameId) => {
   return revertTweaks(ids, (line) => {
     mainWindow?.webContents.send('tweaks:log', line);
-  });
+  }, gameId);
 });
 
 ipcMain.handle('telemetry:get', async () => {
@@ -101,16 +111,20 @@ ipcMain.handle('system:reboot', async () => {
   return runPS(`shutdown /r /t 8 /c "BareFrame: Rebooting to apply kernel optimizations..."`);
 });
 
-ipcMain.handle('boost:scan', async () => {
-  return scanBackgroundHogs();
+ipcMain.handle('boost:scan', async (_evt, gameId) => {
+  return scanBackgroundHogs(gameId);
 });
 
 ipcMain.handle('boost:purge', async (_evt, names) => {
   return purgeBackgroundHogs(names);
 });
 
+ipcMain.handle('boost:launchGame', async (_evt, gameId) => {
+  return launchGame(gameId);
+});
+
 ipcMain.handle('boost:launchValorant', async () => {
-  return launchValorant();
+  return launchGame('valorant');
 });
 
 ipcMain.handle('backups:open', async () => {

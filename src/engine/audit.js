@@ -1,6 +1,20 @@
 const { runPSJson } = require('./ps');
+const { getGameProfile } = require('./games');
 
-const AUDIT_SCRIPT = `
+function buildAuditScript(gameId) {
+  const profile = getGameProfile(gameId);
+  const primaryExe = profile.executables[0];
+
+  const defMatch = {
+    valorant: 'Riot Games|VALORANT',
+    cs2: 'Counter-Strike Global Offensive',
+    fortnite: 'Fortnite',
+    apex: 'Apex',
+    r6: 'Rainbow Six',
+    all: 'Riot Games|VALORANT|Counter-Strike|Fortnite|Apex|Rainbow Six',
+  }[profile.id] || 'Riot Games|VALORANT';
+
+  return `
 $ErrorActionPreference = 'SilentlyContinue'
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
@@ -36,7 +50,6 @@ $mmcssOk = ($mmcss.SystemResponsiveness -eq 0) -and ($games.Priority -ge 6) -and
 # Kernel & Timer
 $kern = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\kernel'
 $pth = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling'
-$mem = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management'
 $bcd = if ($isAdmin) { (bcdedit /enum '{current}' 2>$null) -join "\`n" } else { '' }
 $dynTickOff = if ($isAdmin) { $bcd -match 'disabledynamictick\\s+Yes' } else { $true }
 $kernelOk = ($kern.GlobalTimerResolutionRequests -eq 1) -and ($pth.PowerThrottlingOff -eq 1) -and ($isLaptop -or $dynTickOff)
@@ -88,34 +101,73 @@ if ($nic) {
 # Defender exclusions (only readable when elevated; avoid false negative in standard mode)
 $defExcl = if ($isAdmin) { @((Get-MpPreference).ExclusionPath) } else { @() }
 $defOk = if ($isAdmin) {
-    ($defExcl -contains 'C:\\Riot Games') -or ($defExcl | Where-Object { $_ -like '*VALORANT*' }).Count -gt 0
+    ($defExcl | Where-Object { $_ -match '${defMatch}' }).Count -gt 0
 } else {
     $mmcssOk -and $kernelOk
 }
 
-# User gaming & IFEO
+# User gaming & IFEO for active game
 $gm = (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\GameBar').AutoGameModeEnabled
 $gdvr = (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR').AppCaptureEnabled
 $bgOff = (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications').GlobalUserDisabled
-$ifeo = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\VALORANT-Win64-Shipping.exe\\PerfOptions').CpuPriorityClass
+$ifeo = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${primaryExe}\\PerfOptions').CpuPriorityClass
 $userGamingOk = (($null -eq $gm) -or ($gm -eq 1)) -and (($null -eq $gdvr) -or ($gdvr -eq 0)) -and ($bgOff -eq 1) -and ($ifeo -eq 3)
 
-# Valorant configs
-$valRoot = "$env:LOCALAPPDATA\\VALORANT\\Saved\\Config"
-$valInstalled = Test-Path $valRoot
-$valNonZeroSg = 0
-$valImproveClarityOn = $false
-if ($valInstalled) {
-    $gus = Get-ChildItem $valRoot -Recurse -Filter 'GameUserSettings.ini' | Where-Object { $_.FullName -notmatch '_backup' }
-    foreach ($f in $gus) {
-        $valNonZeroSg += @(Select-String -Path $f.FullName -Pattern '^sg\\.[A-Za-z]+Quality=[1-9]').Count
+# Game-specific config check
+$gameConfigOk = $true
+$gameConfigNote = ''
+$gameInstalled = $false
+$layersPath = 'HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers'
+$layerProps = if (Test-Path $layersPath) { (Get-ItemProperty $layersPath).PSObject.Properties } else { @() }
+
+if ('${profile.id}' -eq 'valorant') {
+    $valRoot = "$env:LOCALAPPDATA\\VALORANT\\Saved\\Config"
+    $gameInstalled = Test-Path $valRoot
+    if ($gameInstalled) {
+        $nonZeroSg = 0; $impClarity = $false
+        Get-ChildItem $valRoot -Recurse -Filter 'GameUserSettings.ini' | Where-Object { $_.FullName -notmatch '_backup' } | ForEach-Object {
+            $nonZeroSg += @(Select-String -Path $_.FullName -Pattern '^sg\\.[A-Za-z]+Quality=[1-9]').Count
+        }
+        Get-ChildItem $valRoot -Recurse -Filter 'RiotUserSettings.ini' | Where-Object { $_.FullName -notmatch '_backup' } | ForEach-Object {
+            if (Select-String -Path $_.FullName -Pattern 'ImproveClarity=True' -Quiet) { $impClarity = $true }
+        }
+        $gameConfigOk = ($nonZeroSg -eq 0) -and (-not $impClarity)
+        if (-not $gameConfigOk) { $gameConfigNote = "Found $nonZeroSg non-zero scalability values" + $(if ($impClarity) { ' and ImproveClarity=True' } else { '' }) }
     }
-    $rus = Get-ChildItem $valRoot -Recurse -Filter 'RiotUserSettings.ini' | Where-Object { $_.FullName -notmatch '_backup' }
-    foreach ($f in $rus) {
-        if (Select-String -Path $f.FullName -Pattern 'ImproveClarity=True' -Quiet) { $valImproveClarityOn = $true }
+} elseif ('${profile.id}' -eq 'cs2') {
+    $hasLayer = @($layerProps | Where-Object { $_.Name -like '*cs2.exe' -and $_.Value -match 'DISABLEDXMAXIMIZEDWINDOWEDMODE' }).Count -gt 0
+    $gameInstalled = $hasLayer -or (Test-Path 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive')
+    $gameConfigOk = (-not $gameInstalled) -or $hasLayer
+    if (-not $gameConfigOk) { $gameConfigNote = 'Windows Fullscreen Optimizations are still active on cs2.exe.' }
+} elseif ('${profile.id}' -eq 'fortnite') {
+    $fnIni = "$env:LOCALAPPDATA\\FortniteGame\\Saved\\Config\\WindowsClient\\GameUserSettings.ini"
+    $gameInstalled = Test-Path $fnIni
+    if ($gameInstalled) {
+        $dirty = (Select-String -Path $fnIni -Pattern '^(bShowGrass=True|bMotionBlur=True|bDisableMouseAcceleration=False)' -Quiet)
+        $gameConfigOk = -not $dirty
+        if (-not $gameConfigOk) { $gameConfigNote = 'Fortnite GameUserSettings.ini still has MotionBlur, Grass, or Mouse Acceleration enabled.' }
+    }
+} elseif ('${profile.id}' -eq 'apex') {
+    $cfg = "$env:USERPROFILE\\Saved Games\\Respawn\\Apex\\local\\videoconfig.txt"
+    $hasLayer = @($layerProps | Where-Object { $_.Name -match 'r5apex' -and $_.Value -match 'DISABLEDXMAXIMIZEDWINDOWEDMODE' }).Count -gt 0
+    $gameInstalled = (Test-Path $cfg) -or $hasLayer
+    if (Test-Path $cfg) {
+        $vsyncOn = Select-String -Path $cfg -Pattern '"setting\\.mat_vsync_mode"\\s+"[1-9]"' -Quiet
+        $gameConfigOk = (-not $vsyncOn) -and $hasLayer
+        if (-not $gameConfigOk) { $gameConfigNote = 'Apex videoconfig or Fullscreen Optimization flags can be tightened.' }
+    }
+} elseif ('${profile.id}' -eq 'r6') {
+    $r6Root = "$env:USERPROFILE\\Documents\\My Games\\Rainbow Six - Siege"
+    $gameInstalled = Test-Path $r6Root
+    if ($gameInstalled) {
+        $dirty = $false
+        Get-ChildItem $r6Root -Recurse -Filter 'GameSettings.ini' | ForEach-Object {
+            if (Select-String -Path $_.FullName -Pattern '^(VSync=[1-9]|MotionBlur=[1-9]|LensEffects=[1-9])' -Quiet) { $dirty = $true }
+        }
+        $gameConfigOk = -not $dirty
+        if (-not $gameConfigOk) { $gameConfigNote = 'R6 GameSettings.ini still has VSync, MotionBlur, or LensEffects enabled.' }
     }
 }
-$valConfigOk = (-not $valInstalled) -or (($valNonZeroSg -eq 0) -and (-not $valImproveClarityOn))
 
 # VBS / HVCI
 $dg = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\\Microsoft\\Windows\\DeviceGuard
@@ -126,13 +178,12 @@ $hvciRunning = ($dg -and ($dg.SecurityServicesRunning -contains 2))
 $nvOverlayRunning = [bool](Get-Process -Name 'NVIDIA Overlay','PresentMon_x64')
 $spRec = (Get-ItemProperty 'HKCU:\\Software\\NVIDIA Corporation\\Global\\ShadowPlay\\NVSPCAPS').RecEnabled
 $spRecOff = (-not $spRec) -or ($spRec[0] -eq 0)
-$valRunning = [bool](Get-Process -Name 'VALORANT-Win64-Shipping')
 
 $result = [PSCustomObject]@{
+    gameId = '${profile.id}'
     isAdmin = $isAdmin
     isLaptop = $isLaptop
-    valRunning = $valRunning
-    valInstalled = $valInstalled
+    gameInstalled = $gameInstalled
     hardware = [PSCustomObject]@{
         cpuName = $cpu.Name.Trim()
         cpuCores = [int]$cpu.NumberOfCores
@@ -166,7 +217,7 @@ $result = [PSCustomObject]@{
         ethernet_latency = ($nicEnabledCount -eq 0)
         defender_exclusions = $defOk
         user_gaming = $userGamingOk
-        valorant_config = $valConfigOk
+        game_config = $gameConfigOk
         nvidia_shadowplay = ($spRecOff -and (-not $nvOverlayRunning))
         baremetal_vbs = ($vbsStatus -eq 0)
     }
@@ -180,19 +231,19 @@ $result = [PSCustomObject]@{
         sysMain = $sysMain
         diagTrack = $diagTrack
         dynTickOff = $dynTickOff
-        valNonZeroSg = $valNonZeroSg
-        valImproveClarityOn = $valImproveClarityOn
+        gameConfigNote = $gameConfigNote
         gpuMsiOk = $gpuMsiOk
         gpuHighPrio = $gpuHighPrio
     }
 }
 $result | ConvertTo-Json -Depth 5 -Compress
 `;
+}
 
-async function runSystemAudit() {
-  const data = await runPSJson(AUDIT_SCRIPT, { timeoutMs: 30000 });
+async function runSystemAudit(gameId = 'valorant') {
+  const profile = getGameProfile(gameId);
+  const data = await runPSJson(buildAuditScript(profile.id), { timeoutMs: 30000 });
 
-  // Compute optimization score (0-100) and prioritized bottlenecks
   const weights = {
     mmcss_scheduler: 9,
     kernel_timer: 9,
@@ -203,7 +254,7 @@ async function runSystemAudit() {
     ethernet_latency: 6,
     defender_exclusions: 6,
     user_gaming: 7,
-    valorant_config: 7,
+    game_config: 7,
     nvidia_shadowplay: 9,
     baremetal_vbs: 15,
   };
@@ -221,14 +272,14 @@ async function runSystemAudit() {
     bottlenecks.push({
       severity: 'HIGH',
       title: 'NVIDIA Overlay / ShadowPlay Active',
-      detail: 'Always-on overlay hooking costs 20–60 FPS and tanks 1% lows. Disable in NVIDIA App → Settings → Features → NVIDIA Overlay OFF.',
+      detail: 'Always-on overlay hooking costs 20–60 FPS and hurts 1% lows. Disable in NVIDIA App → Settings → Features → NVIDIA Overlay OFF.',
     });
   }
   if (data.details.vbsStatus === 2) {
     bottlenecks.push({
       severity: 'HIGH',
       title: data.details.hvciRunning ? 'VBS + Memory Integrity (HVCI) Running' : 'VBS Hypervisor Still Active',
-      detail: 'Windows is running inside a virtualized kernel, adding 8–18% CPU overhead in DX11 esports titles. Toggle "Bare-Metal VBS" in Tweaks if you do not use WSL2/Hyper-V.',
+      detail: `Windows is running inside a virtualized kernel, adding 8–18% CPU overhead in ${profile.shortName}. ${profile.vbsNote}`,
     });
   }
   if (!data.status.mmcss_scheduler || !data.status.kernel_timer) {
@@ -259,11 +310,11 @@ async function runSystemAudit() {
       detail: 'EEE, Green Ethernet, or Interrupt Moderation adds packet jitter on your wired NIC.',
     });
   }
-  if (!data.status.valorant_config && data.valInstalled) {
+  if (!data.status.game_config && data.details.gameConfigNote) {
     bottlenecks.push({
       severity: 'MED',
-      title: 'Unoptimized Valorant .ini Scalability Settings',
-      detail: `Found ${data.details.valNonZeroSg} non-zero scalability values${data.details.valImproveClarityOn ? ' and ImproveClarity=True' : ''}.`,
+      title: `Unoptimized ${profile.shortName} Config / Display Flags`,
+      detail: data.details.gameConfigNote,
     });
   }
   if (data.hardware.ramSticks === 1) {

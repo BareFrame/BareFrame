@@ -1,4 +1,8 @@
 const state = {
+  gameId: localStorage.getItem('bf_selected_game') || null,
+  games: [],
+  installedGames: {},
+  pendingGameId: null,
   audit: null,
   tweaks: [],
   selectedTweaks: new Set(),
@@ -7,6 +11,19 @@ const state = {
   hogs: [],
   support: null,
 };
+
+function getActiveGame() {
+  return state.games.find((g) => g.id === state.gameId) || state.games[0] || {
+    id: 'valorant',
+    name: 'VALORANT',
+    shortName: 'VALORANT',
+    antiCheat: 'Riot Vanguard',
+    tweakSummary: 'IFEO High, Defender exclusions & game config tweaks',
+    launchLabel: 'Launch VALORANT',
+    vbsNote: 'Leaves TPM 2.0 & Secure Boot ON. Disables WSL2/Hyper-V until reverted.',
+    hasTelemetry: true,
+  };
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -62,7 +79,7 @@ async function loadAudit() {
   $('btn-rescan').disabled = true;
   $('btn-rescan').textContent = 'Scanning…';
   try {
-    const data = await window.frameforge.runAudit();
+    const data = await window.frameforge.runAudit(state.gameId || 'valorant');
     state.audit = data;
     renderAudit(data);
     renderTweaks();
@@ -117,9 +134,10 @@ function renderAudit(d) {
   const list = $('bottlenecks-list');
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
+    const g = getActiveGame();
     countPill.textContent = '0 Bottlenecks';
     countPill.className = 'pill-green';
-    list.innerHTML = `<div class="empty-state" style="color:#00E5A0;">All audited Windows, hardware, and Valorant subsystems are tuned for bare-metal performance!</div>`;
+    list.innerHTML = `<div class="empty-state" style="color:#38BDF8;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned for bare-metal performance!</div>`;
   } else {
     countPill.textContent = `${d.bottlenecks.length} Found`;
     countPill.className = 'pill-amber';
@@ -142,7 +160,8 @@ $('btn-rescan').onclick = loadAudit;
 
 // ---------------- TWEAKS ----------------
 async function initTweaks() {
-  state.tweaks = await window.frameforge.getTweaks();
+  state.tweaks = await window.frameforge.getTweaks(state.gameId || 'valorant');
+  state.selectedTweaks.clear();
   state.tweaks.forEach((t) => {
     if (!t.optIn) state.selectedTweaks.add(t.id);
   });
@@ -294,7 +313,7 @@ $('btn-hero-optimize').onclick = async () => {
   resetConsole(`Running 1-Click Optimization (${ids.length} modules)…`);
 
   try {
-    const res = await window.frameforge.applyTweaks(ids);
+    const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
     $('hero-progress-fill').style.width = '100%';
     $('hero-progress-pct').textContent = '100%';
     $('hero-progress-label').textContent = `All ${res.applied} optimizations completed!`;
@@ -334,7 +353,7 @@ $('btn-apply-tweaks').onclick = async () => {
   resetConsole(`Applying ${ids.length} optimization(s)… creating backup & Restore Point first…`);
   $('btn-apply-tweaks').disabled = true;
   try {
-    const res = await window.frameforge.applyTweaks(ids);
+    const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
     $('tweak-console').textContent += `\n\n✓ Finished applying ${res.applied} module(s).${res.requiresReboot ? ' Reboot recommended to activate kernel changes.' : ''}`;
     if (res.requiresReboot) $('btn-reboot-now').classList.remove('hidden');
     showToast(`Applied ${res.applied} optimizations!`);
@@ -361,7 +380,7 @@ $('btn-revert-all').onclick = async () => {
   resetConsole('Reverting all BareFrame tweaks back to stock Windows defaults…');
   $('btn-revert-all').disabled = true;
   try {
-    const res = await window.frameforge.revertTweaks([]);
+    const res = await window.frameforge.revertTweaks([], state.gameId || 'valorant');
     $('tweak-console').textContent += `\n\n✓ Reverted ${res.reverted} module(s). Reboot to finalize.`;
     $('btn-reboot-now').classList.remove('hidden');
     showToast('All settings reverted to defaults.');
@@ -582,7 +601,8 @@ $('btn-refresh-telemetry').onclick = loadTelemetry;
 // ---------------- PRE-MATCH BOOST ----------------
 async function loadHogs() {
   try {
-    const res = await window.frameforge.scanHogs();
+    const activeGame = getActiveGame();
+    const res = await window.frameforge.scanHogs(activeGame.id);
     state.hogs = res.hogs || [];
     $('boost-free-ram').textContent = `${res.freeRamGB} / ${res.totalRamGB} GB`;
     $('boost-hog-count').textContent = state.hogs.length;
@@ -591,7 +611,7 @@ async function loadHogs() {
 
     const list = $('boost-list');
     if (!state.hogs.length) {
-      list.innerHTML = `<div class="empty-state" style="color:#00E5A0;">Zero heavy background apps detected — you're clean and ready to queue!</div>`;
+      list.innerHTML = `<div class="empty-state" style="color:#38BDF8;">Zero heavy background apps detected — you're clean and ready to queue!</div>`;
       return;
     }
 
@@ -600,9 +620,9 @@ async function loadHogs() {
         (h) => `
       <label class="boost-row">
         <div class="boost-left">
-          <input type="checkbox" class="tweak-check hog-check" data-name="${h.name}" ${h.isOverlay ? '' : 'checked'} />
+          <input type="checkbox" class="tweak-check hog-check" data-name="${h.name}" ${h.isOverlay || h.keepForGame ? '' : 'checked'} />
           <div>
-            <div style="font-weight:700">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}</div>
+            <div style="font-weight:700">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}${h.keepForGame ? `<span class="pill-cyan">Needed for ${activeGame.shortName}</span>` : ''}</div>
             <div style="font-size:11.5px;color:#8B97AD">${h.count} process(es)</div>
           </div>
         </div>
@@ -627,9 +647,10 @@ $('btn-purge-hogs').onclick = async () => {
   await loadHogs();
 };
 $('btn-launch-val').onclick = async () => {
-  const res = await window.frameforge.launchValorant();
-  if (res.stdout.includes('LAUNCHED')) showToast('Launching VALORANT…');
-  else showToast('Riot Client not found at C:\\Riot Games\\Riot Client.');
+  const g = getActiveGame();
+  const res = await window.frameforge.launchGame(g.id);
+  if (res.stdout && res.stdout.includes('LAUNCHED')) showToast(`Launching ${g.name}…`);
+  else showToast(`Could not auto-launch ${g.name} — verify it is installed.`);
 };
 
 // ---------------- TIP / SUPPORT MODAL ----------------
@@ -791,8 +812,137 @@ $('btn-check-updates').onclick = () => runUpdateCheck(false);
 $('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
 $('btn-update-install').onclick = triggerInstallUpdate;
 
+// ---------------- GAME PROFILE SELECTOR (FIRST BOOT + SWITCHER) ----------------
+function applyGameUi() {
+  const g = getActiveGame();
+  $('sidebar-game-name').textContent = g.shortName;
+  $('overview-title').textContent = g.id === 'all'
+    ? '1-Click Bare-Metal Optimizer'
+    : `1-Click Optimizer · ${g.name}`;
+  $('overview-subtitle').textContent =
+    `Profile: ${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Optimizations · 1-Click Revert`;
+  $('hero-cta-desc').textContent =
+    `Tailored for ${g.name}. Creates a System Restore Point first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
+  $('hero-vbs-sub').textContent = g.vbsNote;
+
+  const launchBtn = $('btn-launch-val');
+  if (g.launchLabel) {
+    launchBtn.textContent = g.launchLabel;
+    launchBtn.classList.remove('hidden');
+  } else {
+    launchBtn.classList.add('hidden');
+  }
+
+  const telNotice = $('telemetry-game-notice');
+  if (g.hasTelemetry) {
+    telNotice.classList.add('hidden');
+  } else {
+    telNotice.textContent = `Active profile: ${g.name}. Automated local match-log parsing currently supports VALORANT (ShooterGame.log); parsers for ${g.name} are planned for an upcoming release. If VALORANT is installed, your logs still appear below.`;
+    telNotice.classList.remove('hidden');
+  }
+}
+
+function renderGamePickerCards() {
+  const grid = $('game-picker-grid');
+  grid.innerHTML = state.games
+    .map((g) => {
+      const selected = state.pendingGameId === g.id;
+      const installed = Boolean(state.installedGames[g.id]) && g.id !== 'all';
+      return `
+      <button type="button" class="game-card ${selected ? 'selected' : ''}" data-game-id="${g.id}">
+        <div class="game-card-top">
+          <div>
+            <div class="game-card-name">${g.name}</div>
+            <div class="game-card-meta">${g.engine} · ${g.antiCheat}</div>
+          </div>
+          <div class="game-card-badges">
+            ${installed ? '<span class="game-installed-tag">INSTALLED</span>' : ''}
+            <span class="game-check-indicator">${selected ? '✓' : ''}</span>
+          </div>
+        </div>
+        <div class="game-card-desc">${g.tweakSummary}</div>
+      </button>`;
+    })
+    .join('');
+
+  grid.querySelectorAll('.game-card').forEach((card) => {
+    card.onclick = () => {
+      state.pendingGameId = card.dataset.gameId;
+      updateGamePickerSelection();
+    };
+    card.ondblclick = () => {
+      state.pendingGameId = card.dataset.gameId;
+      confirmGameSelection();
+    };
+  });
+}
+
+function updateGamePickerSelection() {
+  renderGamePickerCards();
+  const confirmBtn = $('btn-game-picker-confirm');
+  const note = $('game-picker-selected-note');
+  const chosen = state.games.find((g) => g.id === state.pendingGameId);
+  if (chosen) {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = `Optimize for ${chosen.shortName} →`;
+    note.textContent = `Selected: ${chosen.name} · 12 tailored optimizations ready`;
+  } else {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Continue →';
+    note.textContent = 'Select a game profile to continue.';
+  }
+}
+
+function openGamePicker(isFirstBoot = false) {
+  $('game-picker-kicker').textContent = isFirstBoot ? 'FIRST-TIME SETUP' : 'SWITCH GAME PROFILE';
+  $('btn-game-picker-cancel').classList.toggle('hidden', isFirstBoot);
+  if (!state.pendingGameId) {
+    state.pendingGameId = state.gameId || Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
+  } else if (!isFirstBoot) {
+    state.pendingGameId = state.gameId;
+  }
+  updateGamePickerSelection();
+  $('game-picker-overlay').classList.remove('hidden');
+}
+
+async function confirmGameSelection() {
+  if (!state.pendingGameId) return;
+  const changed = state.gameId !== state.pendingGameId;
+  state.gameId = state.pendingGameId;
+  localStorage.setItem('bf_selected_game', state.gameId);
+  $('game-picker-overlay').classList.add('hidden');
+  applyGameUi();
+  await initTweaks();
+  await loadAudit();
+  if ($('tab-boost').classList.contains('active')) loadHogs();
+  if (changed) showToast(`Profile switched to ${getActiveGame().name}.`);
+}
+
+$('btn-switch-game').onclick = () => openGamePicker(false);
+$('btn-game-picker-cancel').onclick = () => $('game-picker-overlay').classList.add('hidden');
+$('btn-game-picker-confirm').onclick = confirmGameSelection;
+
+async function bootApp() {
+  initUpdater();
+  initSupport();
+
+  const [games, installed] = await Promise.all([
+    window.frameforge.getGames(),
+    window.frameforge.detectGames(),
+  ]);
+  state.games = games || [];
+  state.installedGames = installed || {};
+
+  if (!state.gameId || !state.games.some((g) => g.id === state.gameId)) {
+    // First boot: show game selector immediately before running audit
+    state.pendingGameId = Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
+    openGamePicker(true);
+  } else {
+    applyGameUi();
+    await initTweaks();
+    await loadAudit();
+  }
+}
+
 // Boot sequence
-initUpdater();
-initSupport();
-initTweaks();
-loadAudit();
+bootApp();
