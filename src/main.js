@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 const { runSystemAudit } = require('./engine/audit');
 const { getTweakList, applyTweaks, revertTweaks, BACKUP_ROOT } = require('./engine/tweaks');
@@ -168,59 +169,52 @@ ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isP
     status: 'Installing & restarting BareFrame…',
   });
 
-  const esc = (p) => String(p || '').replace(/'/g, "''");
   const currentExe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  const installDir = path.dirname(currentExe);
+  const batPath = path.join(os.tmpdir(), `bareframe-update-${Date.now()}.cmd`);
 
-  let psHandoff;
+  let batContent;
   if (isPortable) {
-    // Wait until all BareFrame processes have exited, replace portable exe in-place, then relaunch
-    psHandoff = `
-      for ($i = 0; $i -lt 25; $i++) {
-        if (-not (Get-Process -Name 'BareFrame' -ErrorAction SilentlyContinue)) { break }
-        Start-Sleep -Milliseconds 300
-      }
-      Stop-Process -Name 'BareFrame' -Force -ErrorAction SilentlyContinue
-      Start-Sleep -Milliseconds 500
-      $src = '${esc(downloadedExe)}'
-      $dst = '${esc(currentExe)}'
-      try {
-        Copy-Item -Path $src -Destination $dst -Force -ErrorAction Stop
-        Remove-Item -Path $src -Force -ErrorAction SilentlyContinue
-        Start-Process -FilePath $dst
-      } catch {
-        Start-Process -FilePath $src
-      }
-    `;
+    batContent = [
+      '@echo off',
+      'timeout /t 2 /nobreak >nul',
+      'taskkill /F /IM BareFrame.exe >nul 2>&1',
+      'timeout /t 1 /nobreak >nul',
+      `copy /Y "${downloadedExe}" "${currentExe}" >nul 2>&1`,
+      `if exist "${currentExe}" (`,
+      `  del /f /q "${downloadedExe}" >nul 2>&1`,
+      `  start "" "${currentExe}"`,
+      ') else (',
+      `  start "" "${downloadedExe}"`,
+      ')',
+      'del /f /q "%~f0" >nul 2>&1',
+      '',
+    ].join('\r\n');
   } else {
-    // Wait until all BareFrame processes have fully exited, run silent NSIS update (/S /currentuser), cleanup, and relaunch!
-    const installDir = path.dirname(currentExe);
-    psHandoff = `
-      for ($i = 0; $i -lt 25; $i++) {
-        if (-not (Get-Process -Name 'BareFrame' -ErrorAction SilentlyContinue)) { break }
-        Start-Sleep -Milliseconds 300
-      }
-      Stop-Process -Name 'BareFrame' -Force -ErrorAction SilentlyContinue
-      Start-Sleep -Milliseconds 600
-      $installer = '${esc(downloadedExe)}'
-      Unblock-File -Path $installer -ErrorAction SilentlyContinue
-      $p = Start-Process -FilePath $installer -ArgumentList '/S /currentuser /D=${esc(installDir)}' -Wait -PassThru
-      Remove-Item -Path $installer -Force -ErrorAction SilentlyContinue
-      $relaunch = '${esc(currentExe)}'
-      if (-not (Test-Path $relaunch)) {
-        $relaunch = Join-Path $env:LOCALAPPDATA 'Programs\\BareFrame\\BareFrame.exe'
-      }
-      if (Test-Path $relaunch) {
-        Start-Process -FilePath $relaunch
-      }
-    `;
+    batContent = [
+      '@echo off',
+      'timeout /t 2 /nobreak >nul',
+      'taskkill /F /IM BareFrame.exe >nul 2>&1',
+      'timeout /t 1 /nobreak >nul',
+      `"${downloadedExe}" /S /currentuser /D=${installDir}`,
+      `del /f /q "${downloadedExe}" >nul 2>&1`,
+      `if exist "${currentExe}" (`,
+      `  start "" "${currentExe}"`,
+      ') else (',
+      '  start "" "%LOCALAPPDATA%\\Programs\\BareFrame\\BareFrame.exe"',
+      ')',
+      'del /f /q "%~f0" >nul 2>&1',
+      '',
+    ].join('\r\n');
   }
 
-  const encoded = Buffer.from(psHandoff, 'utf16le').toString('base64');
-  const child = spawn(
-    'powershell.exe',
-    ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded],
-    { detached: true, stdio: 'ignore', windowsHide: true }
-  );
+  fs.writeFileSync(batPath, batContent, 'ascii');
+
+  const child = spawn('cmd.exe', ['/c', 'start', '""', '/min', `"${batPath}"`], {
+    detached: true,
+    stdio: 'ignore',
+    windowsVerbatimArguments: true,
+  });
   child.unref();
 
   setTimeout(() => app.exit(0), 400);
