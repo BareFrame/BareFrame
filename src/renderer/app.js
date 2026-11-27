@@ -20,7 +20,7 @@ function getActiveGame() {
     antiCheat: 'Riot Vanguard',
     tweakSummary: 'IFEO High, Defender exclusions & game config tweaks',
     launchLabel: 'Launch VALORANT',
-    vbsNote: 'Leaves TPM 2.0 & Secure Boot ON. Disables WSL2/Hyper-V until reverted.',
+    vbsNote: 'Leaves TPM 2.0 & Secure Boot enabled. Disables WSL2/Hyper-V until reverted.',
     hasTelemetry: true,
   };
 }
@@ -95,30 +95,31 @@ async function loadAudit() {
 function renderAudit(d) {
   const badge = $('admin-badge');
   if (d.isAdmin) {
-    badge.textContent = '● Administrator Active';
+    badge.textContent = 'ADMIN';
     badge.className = 'admin-badge is-admin';
     badge.style.cursor = 'default';
     badge.onclick = null;
   } else {
-    badge.textContent = 'Standard Mode (Click to Elevate)';
+    badge.textContent = 'STANDARD · ELEVATE';
     badge.className = 'admin-badge no-admin';
     badge.style.cursor = 'pointer';
-    badge.title = 'Launch with Administrator privileges to apply kernel/system tweaks';
+    badge.title = 'Relaunch with Administrator privileges to apply system tweaks';
     badge.onclick = () => ensureAdmin('Enable Administrator Mode');
   }
 
-  // Score ring
-  const circ = 364.4;
-  const offset = circ - (circ * d.score) / 100;
-  const ring = $('score-ring-fg');
-  ring.style.strokeDashoffset = offset;
-  ring.style.stroke = d.score >= 85 ? '#38BDF8' : d.score >= 60 ? '#0A84FF' : '#FF2D55';
-  $('score-num').textContent = d.score;
+  // Linear Readiness Bar & Score
+  const scoreEl = $('score-num');
+  const barFill = $('score-bar-fill');
+  scoreEl.textContent = d.score;
+  scoreEl.className = `score-num ${d.score >= 80 ? 'is-good' : d.score < 55 ? 'is-low' : ''}`.trim();
+  barFill.style.width = `${Math.max(0, Math.min(100, d.score))}%`;
+  barFill.style.background = d.score >= 80 ? '#2563EB' : d.score >= 55 ? '#60A5FA' : '#E6324B';
+
   $('score-verdict').textContent =
-    d.score >= 90 ? 'Tournament Ready' : d.score >= 70 ? 'Well Optimized' : d.score >= 45 ? 'Bottlenecks Found' : 'Heavy Overhead';
+    d.score >= 90 ? 'Tuned' : d.score >= 70 ? 'Mostly Tuned' : d.score >= 45 ? 'Bottlenecks Found' : 'Stock Overhead';
   const doneCount = Object.values(d.status).filter(Boolean).length;
   const totalCount = Object.keys(d.status).length;
-  $('score-sub').textContent = `${doneCount}/${totalCount} subsystems optimized`;
+  $('score-sub').textContent = `${doneCount}/${totalCount} subsystems tuned`;
   $('nav-tweaks-badge').textContent = `${doneCount}/${totalCount}`;
 
   // Hardware
@@ -135,17 +136,17 @@ function renderAudit(d) {
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
     const g = getActiveGame();
-    countPill.textContent = '0 Bottlenecks';
-    countPill.className = 'pill-green';
-    list.innerHTML = `<div class="empty-state" style="color:#38BDF8;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned for bare-metal performance!</div>`;
+    countPill.textContent = '0 FOUND';
+    countPill.className = 'pill-blue';
+    list.innerHTML = `<div class="empty-state" style="color:#60A5FA;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
   } else {
-    countPill.textContent = `${d.bottlenecks.length} Found`;
-    countPill.className = 'pill-amber';
+    countPill.textContent = `${d.bottlenecks.length} FOUND`;
+    countPill.className = 'pill-red';
     list.innerHTML = d.bottlenecks
       .map(
         (b) => `
       <div class="bottleneck-item">
-        <span class="${b.severity === 'HIGH' ? 'pill-red' : b.severity === 'MED' ? 'pill-amber' : 'pill-cyan'}">${b.severity}</span>
+        <span class="${b.severity === 'HIGH' ? 'pill-red' : b.severity === 'MED' ? 'pill-opt' : 'pill-blue'}">${b.severity}</span>
         <div>
           <div class="bottleneck-title">${b.title}</div>
           <div class="bottleneck-detail">${b.detail}</div>
@@ -177,8 +178,8 @@ function renderTweaks() {
     .map((t) => {
       const done = Boolean(statusMap[t.id]);
       const checked = state.selectedTweaks.has(t.id) ? 'checked' : '';
-      const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-cyan';
-      const safetyCls = t.optIn ? 'pill-amber' : 'pill-green';
+      const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-neutral';
+      const safetyCls = t.optIn ? 'pill-opt' : 'pill-neutral';
       return `
       <div class="tweak-card ${t.optIn ? 'opt-in' : ''}">
         <div class="tweak-row-compact">
@@ -188,9 +189,9 @@ function renderTweaks() {
           </label>
           <div class="tweak-badges">
             <span class="${impactCls}">${t.impact}</span>
-            <span class="${safetyCls}">${t.safety}</span>
-            ${t.requiresReboot ? '<span class="pill-neutral">Reboot</span>' : ''}
-            <span class="${done ? 'pill-green' : 'pill-neutral'}">${done ? 'OPTIMIZED' : 'STOCK'}</span>
+            <span class="${safetyCls}">${t.optIn ? 'OPT-IN' : 'STANDARD'}</span>
+            ${t.requiresReboot ? '<span class="pill-neutral">REBOOT</span>' : ''}
+            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'APPLIED' : 'STOCK'}</span>
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
         </div>
@@ -230,7 +231,7 @@ function resetConsole(initialLine) {
   consoleLineCount = 1;
   $('tweak-console').textContent = initialLine;
   const pill = $('console-count-pill');
-  if (pill) pill.textContent = '1 line';
+  if (pill) pill.textContent = '1 LINE';
 }
 
 window.frameforge.onTweakLog((line) => {
@@ -239,7 +240,7 @@ window.frameforge.onTweakLog((line) => {
   pre.scrollTop = pre.scrollHeight;
   consoleLineCount++;
   const pill = $('console-count-pill');
-  if (pill) pill.textContent = `${consoleLineCount} lines`;
+  if (pill) pill.textContent = `${consoleLineCount} LINES`;
 });
 
 window.frameforge.onTweakProgress((prog) => {
@@ -252,20 +253,20 @@ window.frameforge.onTweakProgress((prog) => {
 function renderResultsBreakdown(res) {
   const card = $('hero-results-card');
   const list = $('hero-results-list');
-  $('hero-results-title').textContent = `✓ Optimization Complete — ${res.applied} Modules Applied`;
+  $('hero-results-title').textContent = `Optimization complete (${res.applied} modules applied)`;
   $('hero-results-sub').textContent = res.requiresReboot
-    ? 'Click + on any item for details. Reboot once so kernel & Bare-Metal changes activate.'
-    : 'All optimizations are live immediately. Click + on any item for details.';
+    ? 'Expand any row for exact output. Reboot once so kernel and Bare-Metal settings activate.'
+    : 'All applied settings are active now. Expand any row for exact output.';
 
   list.innerHTML = (res.results || [])
     .map((r) => {
       const cls = r.status === 'DONE' ? '' : r.status === 'SKIPPED' ? 'is-skip' : 'is-err';
-      const icon = r.status === 'DONE' ? '✓' : r.status === 'SKIPPED' ? '!' : '✕';
+      const tag = r.status === 'DONE' ? 'OK' : r.status === 'SKIPPED' ? 'SKIP' : 'ERR';
       return `
       <details class="result-item ${cls}">
         <summary class="result-summary">
           <span class="result-summary-left">
-            <span class="result-check">${icon}</span>
+            <span class="result-check">${tag}</span>
             <span class="result-name">${r.name}</span>
           </span>
           <span class="expand-symbol" aria-hidden="true"></span>
@@ -282,7 +283,7 @@ async function ensureAdmin(actionLabel) {
   if (state.audit?.isAdmin) return true;
   const ok = await confirmModal(
     'Administrator Permission Required',
-    `BareFrame opens without UAC so Match Telemetry and Pre-Match Boost launch instantly. "${actionLabel}" modifies Windows system settings — click Confirm to approve the Windows UAC prompt once for this session.`
+    `BareFrame starts in standard mode so logs and Pre-Match Boost open without UAC prompts. "${actionLabel}" modifies Windows settings — approve the Windows UAC prompt once for this session.`
   );
   if (!ok) return false;
   showToast('Requesting Administrator elevation…');
@@ -292,14 +293,14 @@ async function ensureAdmin(actionLabel) {
 }
 
 $('btn-hero-optimize').onclick = async () => {
-  if (!(await ensureAdmin('Optimize'))) return;
+  if (!(await ensureAdmin('Run Optimization'))) return;
   const includeVbs = $('chk-hero-vbs').checked;
   const ids = state.tweaks.filter((t) => includeVbs || !t.optIn).map((t) => t.id);
 
   if (includeVbs) {
     const ok = await confirmModal(
-      'Run Full Bare-Metal Optimization?',
-      `BareFrame will create a System Restore Point & backup first, then apply all ${ids.length} optimizations including Bare-Metal VBS/HVCI OFF (+10–18% CPU FPS; disables WSL2/Hyper-V, keeps TPM 2.0 & Secure Boot ON). Continue?`
+      'Run Full Optimization (with Bare-Metal Mode)?',
+      `BareFrame will create a System Restore Point and backups first, then apply ${ids.length} tweaks including Bare-Metal Mode (VBS/HVCI off; disables WSL2/Hyper-V while leaving TPM 2.0 and Secure Boot enabled). Continue?`
     );
     if (!ok) return;
   }
@@ -309,20 +310,20 @@ $('btn-hero-optimize').onclick = async () => {
   $('hero-progress-state').classList.remove('hidden');
   $('hero-progress-fill').style.width = '3%';
   $('hero-progress-pct').textContent = '3%';
-  $('hero-progress-label').textContent = 'Creating System Restore Point & Registry/Config Backups…';
-  resetConsole(`Running 1-Click Optimization (${ids.length} modules)…`);
+  $('hero-progress-label').textContent = 'Creating System Restore Point & registry/config backups…';
+  resetConsole(`Running optimization (${ids.length} modules)…`);
 
   try {
     const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
     $('hero-progress-fill').style.width = '100%';
     $('hero-progress-pct').textContent = '100%';
-    $('hero-progress-label').textContent = `All ${res.applied} optimizations completed!`;
+    $('hero-progress-label').textContent = `Completed (${res.applied} modules applied)`;
     renderResultsBreakdown(res);
-    showToast(`Optimization complete! ${res.applied} modules applied.`);
+    showToast(`Applied ${res.applied} modules.`);
     await loadAudit();
     maybePromptTip(
-      `${res.applied} Optimizations Applied!`,
-      'Your PC is now tuned with full backup & 1-click revert. BareFrame is 100% free & open-source — leave a tip on Ko-fi if you love the extra frames!'
+      `${res.applied} Modules Applied`,
+      'Your system has been updated with automatic backups and 1-click revert. BareFrame is free and MIT open-source — optional Ko-fi tips help cover signing and maintenance.'
     );
   } catch (err) {
     showToast(`Error: ${err.message}`);
@@ -345,22 +346,22 @@ $('btn-apply-tweaks').onclick = async () => {
   if (ids.length === 0) return showToast('Select at least one tweak first.');
   if (ids.includes('baremetal_vbs')) {
     const ok = await confirmModal(
-      'Bare-Metal VBS Selected',
-      'Disabling VBS & Hypervisor gives +10–18% CPU FPS, but disables WSL2, Docker Desktop, and Hyper-V until reverted. TPM 2.0 & Secure Boot stay ON. Continue?'
+      'Bare-Metal Mode Selected',
+      'Disabling VBS and Hyper-V improves CPU frame times but disables WSL2 and Docker Desktop until reverted. TPM 2.0 and Secure Boot remain enabled. Continue?'
     );
     if (!ok) return;
   }
-  resetConsole(`Applying ${ids.length} optimization(s)… creating backup & Restore Point first…`);
+  resetConsole(`Applying ${ids.length} module(s)… creating backup & Restore Point first…`);
   $('btn-apply-tweaks').disabled = true;
   try {
     const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
-    $('tweak-console').textContent += `\n\n✓ Finished applying ${res.applied} module(s).${res.requiresReboot ? ' Reboot recommended to activate kernel changes.' : ''}`;
+    $('tweak-console').textContent += `\n\n[DONE] Applied ${res.applied} module(s).${res.requiresReboot ? ' Reboot recommended to activate kernel changes.' : ''}`;
     if (res.requiresReboot) $('btn-reboot-now').classList.remove('hidden');
-    showToast(`Applied ${res.applied} optimizations!`);
+    showToast(`Applied ${res.applied} modules.`);
     await loadAudit();
     maybePromptTip(
-      `Applied ${res.applied} Optimizations!`,
-      'Your system is now tuned with full backups & restore point saved. BareFrame is 100% free & open-source — if it boosted your FPS, consider leaving a tip on Ko-fi!'
+      `${res.applied} Modules Applied`,
+      'Backups and a Restore Point were saved first. BareFrame is free and open-source — optional Ko-fi tips support code signing and updates.'
     );
   } catch (err) {
     $('tweak-console').textContent += `\n[ERROR] ${err.message}`;
@@ -373,17 +374,17 @@ $('btn-apply-tweaks').onclick = async () => {
 $('btn-revert-all').onclick = async () => {
   if (!(await ensureAdmin('Revert All Optimizations'))) return;
   const ok = await confirmModal(
-    'Revert All Optimizations?',
-    'This restores Windows defaults for MMCSS, Kernel timers, Power Plan, Memory Compression, Services, USB/Ethernet power saving, and VBS/Hypervisor.'
+    'Revert All Tweaks?',
+    'Restores Windows defaults for MMCSS, kernel timers, power plan, memory compression, services, USB/Ethernet power saving, IFEO priority, and VBS/Hyper-V.'
   );
   if (!ok) return;
   resetConsole('Reverting all BareFrame tweaks back to stock Windows defaults…');
   $('btn-revert-all').disabled = true;
   try {
     const res = await window.frameforge.revertTweaks([], state.gameId || 'valorant');
-    $('tweak-console').textContent += `\n\n✓ Reverted ${res.reverted} module(s). Reboot to finalize.`;
+    $('tweak-console').textContent += `\n\n[DONE] Reverted ${res.reverted} module(s). Reboot to finalize.`;
     $('btn-reboot-now').classList.remove('hidden');
-    showToast('All settings reverted to defaults.');
+    showToast('All settings reverted to Windows defaults.');
     await loadAudit();
   } catch (err) {
     $('tweak-console').textContent += `\n[ERROR] ${err.message}`;
@@ -395,7 +396,7 @@ $('btn-revert-all').onclick = async () => {
 $('btn-reboot-now').onclick = async (e) => {
   e.preventDefault();
   e.stopPropagation();
-  const ok = await confirmModal('Reboot PC Now?', 'Windows will restart in 8 seconds so all kernel and timer tweaks take full effect.');
+  const ok = await confirmModal('Reboot PC Now?', 'Windows will restart in 8 seconds so kernel and timer changes take full effect.');
   if (ok) {
     await window.frameforge.rebootWindows();
     showToast('Rebooting in 8 seconds…');
@@ -405,8 +406,8 @@ $('btn-reboot-now').onclick = async (e) => {
 // ---------------- THROTTLE TEST & BIOS ----------------
 async function loadBiosGuide(vendor, model) {
   const guide = await window.frameforge.getBiosGuide(vendor, model);
-  $('bios-card-title').textContent = `${guide.brand} BIOS Playbook`;
-  $('bios-key-pill').textContent = `Key: ${guide.key}`;
+  $('bios-card-title').textContent = `${guide.brand} BIOS Guide`;
+  $('bios-key-pill').textContent = `KEY: ${guide.key}`;
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
 
@@ -429,16 +430,16 @@ function renderThrottleChart(samples) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#8B97AD" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
-      <polyline fill="none" stroke="#38BDF8" stroke-width="2.5" points="${pts}" />
+      <polyline fill="none" stroke="#60A5FA" stroke-width="2" points="${pts}" />
       ${samples
         .map(
           (s) => `
-        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4.5" fill="#FF4655" stroke="#fff" stroke-width="1.2"/>
-        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F1F5F9" font-size="10" font-weight="700" text-anchor="middle">${s.avgMHz}</text>
-        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#8B97AD" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
+        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#E6324B" stroke="#08090C" stroke-width="1.5"/>
+        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F3F5F9" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
+        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
         )
         .join('')}
     </svg>`;
@@ -447,36 +448,36 @@ function renderThrottleChart(samples) {
 window.frameforge.onThrottleSample((sample) => {
   state.throttleSamples.push(sample);
   renderThrottleChart(state.throttleSamples);
-  $('throttle-summary').textContent = `Sampling T+${sample.sec}s / 34s — Active P-Core Avg: ${sample.avgMHz} MHz (Peak: ${sample.peakMHz} MHz)…`;
+  $('throttle-summary').textContent = `Sampling T+${sample.sec}s / 34s · Active P-Core Avg: ${sample.avgMHz} MHz (Peak: ${sample.peakMHz} MHz)`;
 });
 
 $('btn-run-throttle').onclick = async () => {
   state.throttleSamples = [];
   $('btn-run-throttle').disabled = true;
   $('btn-run-throttle').textContent = 'Testing (35s)…';
-  $('throttle-verdict-pill').textContent = 'Running…';
-  $('throttle-verdict-pill').className = 'pill-cyan';
-  $('throttle-summary').textContent = 'Applying sustained 6-thread CPU load to check 28s Tau / PL1 & thermal stability…';
+  $('throttle-verdict-pill').textContent = 'RUNNING';
+  $('throttle-verdict-pill').className = 'pill-blue';
+  $('throttle-summary').textContent = 'Applying sustained 6-thread CPU load to measure 28s Tau / PL1 and thermal stability…';
   try {
     const res = await window.frameforge.runThrottleTest();
     renderThrottleChart(res.points);
     const pill = $('throttle-verdict-pill');
     pill.textContent = res.verdict;
-    pill.className = res.verdict === 'ROCK SOLID' ? 'pill-green' : res.verdict === 'MILD THROTTLE' ? 'pill-amber' : 'pill-red';
+    pill.className = res.verdict === 'ROCK SOLID' ? 'pill-blue' : res.verdict === 'MILD THROTTLE' ? 'pill-opt' : 'pill-red';
     $('throttle-summary').textContent = res.explanation;
   } catch (err) {
     $('throttle-summary').textContent = `Error: ${err.message}`;
   } finally {
     $('btn-run-throttle').disabled = false;
-    $('btn-run-throttle').textContent = 'Run 35s Clock Stress Test';
+    $('btn-run-throttle').textContent = 'Run 35s Clock Test';
   }
 };
 
 $('btn-reboot-bios').onclick = async () => {
-  if (!(await ensureAdmin('Reboot Straight into UEFI BIOS'))) return;
+  if (!(await ensureAdmin('Reboot to UEFI BIOS'))) return;
   const ok = await confirmModal(
-    'Reboot Straight into UEFI BIOS?',
-    'Your PC will restart in 8 seconds directly into your motherboard BIOS setup screen. Save any open work first.'
+    'Reboot to UEFI BIOS?',
+    'Your PC will restart in 8 seconds directly into UEFI firmware setup. Save any open work first.'
   );
   if (ok) {
     await window.frameforge.rebootToBios();
@@ -484,7 +485,7 @@ $('btn-reboot-bios').onclick = async () => {
   }
 };
 
-// ---------------- VALORANT TELEMETRY ----------------
+// ---------------- MATCH TELEMETRY ----------------
 async function loadTelemetry() {
   try {
     const data = await window.frameforge.getTelemetry();
@@ -502,7 +503,7 @@ function renderTelemetry(data) {
 
   if (!data.installed || !data.sessions.length) {
     kpis.innerHTML = '';
-    chartWrap.innerHTML = `<div class="empty-state">No completed Valorant match logs found in %LOCALAPPDATA%\\VALORANT\\Saved\\Logs\\. Play one TDM or match and click Refresh!</div>`;
+    chartWrap.innerHTML = `<div class="empty-state">No completed VALORANT match logs found in %LOCALAPPDATA%\\VALORANT\\Saved\\Logs\\. Complete a match and click Refresh Logs.</div>`;
     tbody.innerHTML = '';
     return;
   }
@@ -511,18 +512,18 @@ function renderTelemetry(data) {
   kpis.innerHTML = `
     <div class="kpi-card">
       <div class="kpi-label">Latest Match Avg FPS</div>
-      <div class="kpi-val accent-mint">${s.latestFps} FPS</div>
+      <div class="kpi-val accent-blue">${s.latestFps} FPS</div>
       <div class="kpi-sub">${s.latestFrametimeMs} ms frametime</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Session FPS Progression</div>
-      <div class="kpi-val ${s.fpsGainPct >= 0 ? 'accent-mint' : 'accent-crimson'}">${s.fpsGainPct >= 0 ? '+' : ''}${s.fpsGainPct}%</div>
+      <div class="kpi-label">Session Progression</div>
+      <div class="kpi-val ${s.fpsGainPct >= 0 ? 'accent-blue' : 'accent-red'}">${s.fpsGainPct >= 0 ? '+' : ''}${s.fpsGainPct}%</div>
       <div class="kpi-sub">Across ${s.sessionCount} parsed logs</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Time Above 240 FPS</div>
-      <div class="kpi-val accent-cyan">${s.latestPctOver240}%</div>
-      <div class="kpi-sub">Only ${s.latestPctUnder240}% dipped &lt;240</div>
+      <div class="kpi-val">${s.latestPctOver240}%</div>
+      <div class="kpi-sub">${s.latestPctUnder240}% dipped under 240</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">GPU Headroom</div>
@@ -531,23 +532,22 @@ function renderTelemetry(data) {
     </div>`;
 
   const bp = $('telemetry-bottleneck-pill');
-  bp.textContent = `Bottleneck: ${s.latestBottleneck}`;
-  bp.className = s.latestBottleneck === 'CPU-Bound' ? 'pill-amber' : 'pill-cyan';
+  bp.textContent = `BOTTLENECK: ${s.latestBottleneck.toUpperCase()}`;
+  bp.className = s.latestBottleneck === 'CPU-Bound' ? 'pill-red' : 'pill-blue';
 
   const tipBanner = $('telemetry-tip-banner');
   if (s.fpsGainPct >= 5) {
-    $('telemetry-tip-headline').textContent = `BareFrame boosted your Valorant avg FPS by +${s.fpsGainPct}% (${s.latestFps} FPS) for $0!`;
+    $('telemetry-tip-headline').textContent = `Local logs show +${s.fpsGainPct}% average FPS (${s.latestFps} FPS latest).`;
     tipBanner.classList.remove('hidden');
   } else {
     tipBanner.classList.add('hidden');
   }
 
-  // Bar + Line Progression SVG
   const sessions = data.sessions;
   const W = 860, H = 210, padL = 46, padR = 24, padT = 24, padB = 34;
   const maxFps = Math.max(...sessions.map((x) => x.avgFps), 320) + 40;
   const slotW = (W - padL - padR) / Math.max(sessions.length, 1);
-  const barW = Math.min(54, slotW * 0.55);
+  const barW = Math.min(48, slotW * 0.52);
   const yFps = (f) => padT + ((maxFps - f) / maxFps) * (H - padT - padB);
 
   chartWrap.innerHTML = `
@@ -557,7 +557,7 @@ function renderTelemetry(data) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yFps(v)}" x2="${W - padR}" y2="${yFps(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#8B97AD" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
       ${sessions
@@ -567,11 +567,11 @@ function renderTelemetry(data) {
           const h = H - padB - top;
           const isLast = i === sessions.length - 1;
           return `
-            <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
-                  fill="${isLast ? '#0A84FF' : 'rgba(255,45,85,0.75)'}" />
-            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#38BDF8' : '#F1F5F9'}" font-size="11" font-weight="800" text-anchor="middle">${m.avgFps} FPS</text>
-            <text x="${cx}" y="${H - 15}" fill="#8B97AD" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
-            <text x="${cx}" y="${H - 3}" fill="#F59E0B" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
+            <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="2"
+                  fill="${isLast ? '#2563EB' : 'rgba(230,50,75,0.75)'}" />
+            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#60A5FA' : '#F3F5F9'}" font-family="Consolas,monospace" font-size="10.5" font-weight="700" text-anchor="middle">${m.avgFps}</text>
+            <text x="${cx}" y="${H - 15}" fill="#687285" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
+            <text x="${cx}" y="${H - 3}" fill="#A0A8B8" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
         })
         .join('')}
     </svg>`;
@@ -583,14 +583,14 @@ function renderTelemetry(data) {
     <tr class="${idx === 0 ? 'latest-row' : ''}">
       <td>${m.dateLabel}</td>
       <td>${m.mode}</td>
-      <td><strong style="color:${idx === 0 ? '#00E5A0' : '#fff'}">${m.avgFps}</strong></td>
+      <td><strong style="color:${idx === 0 ? '#60A5FA' : '#F3F5F9'}">${m.avgFps}</strong></td>
       <td>${m.avgFrametimeMs} ms</td>
       <td>${m.pctUnder240}%</td>
       <td>${m.pctOver240}%</td>
       <td>${m.framesOver480}</td>
       <td>${m.avgEngineLatencyMs} ms</td>
       <td>${m.gpuTimeMs} ms (${m.gpuCapacityFps})</td>
-      <td><span class="${m.bottleneck === 'CPU-Bound' ? 'pill-amber' : 'pill-cyan'}">${m.bottleneck}</span></td>
+      <td><span class="${m.bottleneck === 'CPU-Bound' ? 'pill-red' : 'pill-blue'}">${m.bottleneck}</span></td>
     </tr>`
     )
     .join('');
@@ -611,7 +611,7 @@ async function loadHogs() {
 
     const list = $('boost-list');
     if (!state.hogs.length) {
-      list.innerHTML = `<div class="empty-state" style="color:#38BDF8;">Zero heavy background apps detected — you're clean and ready to queue!</div>`;
+      list.innerHTML = `<div class="empty-state" style="color:#60A5FA;">No heavy background apps detected.</div>`;
       return;
     }
 
@@ -622,8 +622,8 @@ async function loadHogs() {
         <div class="boost-left">
           <input type="checkbox" class="tweak-check hog-check" data-name="${h.name}" ${h.isOverlay || h.keepForGame ? '' : 'checked'} />
           <div>
-            <div style="font-weight:700">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}${h.keepForGame ? `<span class="pill-cyan">Needed for ${activeGame.shortName}</span>` : ''}</div>
-            <div style="font-size:11.5px;color:#8B97AD">${h.count} process(es)</div>
+            <div style="font-weight:600">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}</div>
+            <div style="font-size:11px;color:#687285">${h.count} process(es)</div>
           </div>
         </div>
         <div class="boost-meta">
@@ -641,9 +641,9 @@ async function loadHogs() {
 $('btn-scan-hogs').onclick = loadHogs;
 $('btn-purge-hogs').onclick = async () => {
   const names = [...document.querySelectorAll('.hog-check:checked')].map((c) => c.dataset.name);
-  if (!names.length) return showToast('No processes selected to close.');
+  if (!names.length) return showToast('No processes selected.');
   const res = await window.frameforge.purgeHogs(names);
-  showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB RAM!`);
+  showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB RAM.`);
   await loadHogs();
 };
 $('btn-launch-val').onclick = async () => {
@@ -653,7 +653,7 @@ $('btn-launch-val').onclick = async () => {
   else showToast(`Could not auto-launch ${g.name} — verify it is installed.`);
 };
 
-// ---------------- TIP / SUPPORT MODAL ----------------
+// ---------------- SUPPORT MODAL ----------------
 async function initSupport() {
   state.support = await window.frameforge.getSupportConfig();
   $('btn-tip-kofi').onclick = () => {
@@ -689,13 +689,13 @@ function maybePromptTip(title, body) {
 
 $('btn-tip-sidebar').onclick = () =>
   openTipModal(
-    'Support BareFrame (100% Free)',
-    'BareFrame is completely free & open-source with zero ads or paid tweak packs. Tips on Ko-fi help cover Windows code-signing fees and keep updates coming!'
+    'Support BareFrame',
+    'BareFrame is free and MIT open-source with no paywalls or ads. Optional Ko-fi tips (0% platform fee) help cover Windows code-signing and ongoing hardware testing.'
   );
 $('btn-tip-banner').onclick = () =>
   openTipModal(
-    'Glad BareFrame Boosted Your Frames!',
-    'Every feature in BareFrame is 100% free forever. If you want to support development or help cover code-signing costs, any tip on Ko-fi is hugely appreciated!'
+    'Support BareFrame',
+    'BareFrame has no paid tiers or accounts. Optional Ko-fi tips help fund code-signing and updates.'
   );
 $('btn-tip-close').onclick = closeTipModal;
 
@@ -706,7 +706,7 @@ async function initUpdater() {
   try {
     const ver = await window.frameforge.getAppVersion();
     const pill = $('app-version-pill');
-    if (pill) pill.textContent = `v${ver} FREE & OSS`;
+    if (pill) pill.textContent = `v${ver}`;
   } catch {}
   runUpdateCheck(true);
 }
@@ -722,12 +722,11 @@ async function runUpdateCheck(silent = false) {
     latestUpdateInfo = info;
     if (info.hasUpdate && info.downloadUrl) {
       const upPill = $('btn-update-pill');
-      upPill.textContent = `↑ Update v${info.latestVersion}`;
+      upPill.textContent = `UPDATE v${info.latestVersion}`;
       upPill.classList.remove('hidden');
 
-      // Show prominent Install Update notification right under Pre-Match Boost
       const sideCard = $('sidebar-update-card');
-      $('sidebar-update-ver').textContent = `New Update v${info.latestVersion}`;
+      $('sidebar-update-ver').textContent = `UPDATE v${info.latestVersion}`;
       $('btn-sidebar-install-update').textContent = 'Install Update';
       $('btn-sidebar-install-update').disabled = false;
       $('sidebar-update-prog').classList.add('hidden');
@@ -735,7 +734,7 @@ async function runUpdateCheck(silent = false) {
 
       if (!silent) openUpdateModal(info);
     } else if (!silent) {
-      showToast(`You're on the latest version (v${info.currentVersion}).`);
+      showToast(`Up to date (v${info.currentVersion}).`);
     }
   } catch (err) {
     if (!silent) showToast(`Update check failed: ${err.message}`);
@@ -749,7 +748,7 @@ async function runUpdateCheck(silent = false) {
 
 function openUpdateModal(info) {
   $('update-modal-title').textContent = `Update to BareFrame v${info.latestVersion}`;
-  $('update-modal-body').textContent = `Current: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). BareFrame will download the official GitHub Release and launch the update automatically.`;
+  $('update-modal-body').textContent = `Installed: v${info.currentVersion} -> New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). Downloads from GitHub Releases and restarts automatically.`;
   $('update-progress-wrap').classList.add('hidden');
   $('btn-update-install').disabled = false;
   $('btn-update-install').textContent = 'Download & Install';
@@ -761,12 +760,10 @@ window.frameforge.onUpdateProgress((p) => {
   const modalTxt = p.receivedMB > 0 && p.pct < 100 ? `Downloading… ${p.receivedMB} / ${p.totalMB} MB` : statusTxt;
   const sideTxt = p.pct >= 100 ? 'Installing & restarting…' : `${p.receivedMB}/${p.totalMB} MB`;
 
-  // Update Modal loading bar
   $('update-progress-fill').style.width = `${p.pct}%`;
   $('update-progress-pct').textContent = `${p.pct}%`;
   $('update-progress-text').textContent = modalTxt;
 
-  // Sidebar inline loading bar
   $('sidebar-update-fill').style.width = `${p.pct}%`;
   $('sidebar-update-pct').textContent = `${p.pct}%`;
   $('sidebar-update-status').textContent = sideTxt;
@@ -794,7 +791,7 @@ async function triggerInstallUpdate() {
     });
     $('update-progress-text').textContent = 'Installing & restarting BareFrame…';
     $('sidebar-update-status').textContent = 'Restarting…';
-    showToast('Installing update & restarting BareFrame…');
+    showToast('Installing update and restarting BareFrame…');
   } catch (err) {
     showToast(`Update failed: ${err.message}`);
     $('btn-update-install').disabled = false;
@@ -817,12 +814,12 @@ function applyGameUi() {
   const g = getActiveGame();
   $('sidebar-game-name').textContent = g.shortName;
   $('overview-title').textContent = g.id === 'all'
-    ? '1-Click Bare-Metal Optimizer'
-    : `1-Click Optimizer · ${g.name}`;
+    ? 'System Overview'
+    : `System Overview · ${g.name}`;
   $('overview-subtitle').textContent =
-    `Profile: ${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Optimizations · 1-Click Revert`;
+    `Profile: ${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Tweaks · 1-Click Revert`;
   $('hero-cta-desc').textContent =
-    `Tailored for ${g.name}. Creates a System Restore Point first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
+    `Tailored for ${g.name}. Creates a System Restore Point and backups first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
   $('hero-vbs-sub').textContent = g.vbsNote;
 
   const launchBtn = $('btn-launch-val');
@@ -837,7 +834,7 @@ function applyGameUi() {
   if (g.hasTelemetry) {
     telNotice.classList.add('hidden');
   } else {
-    telNotice.textContent = `Active profile: ${g.name}. Automated local match-log parsing currently supports VALORANT (ShooterGame.log); parsers for ${g.name} are planned for an upcoming release. If VALORANT is installed, your logs still appear below.`;
+    telNotice.textContent = `Active profile: ${g.name}. Automated local log parsing currently reads VALORANT (ShooterGame.log); parsers for ${g.name} are planned next. Any local VALORANT logs still display below.`;
     telNotice.classList.remove('hidden');
   }
 }
@@ -884,11 +881,11 @@ function updateGamePickerSelection() {
   const chosen = state.games.find((g) => g.id === state.pendingGameId);
   if (chosen) {
     confirmBtn.disabled = false;
-    confirmBtn.textContent = `Optimize for ${chosen.shortName} →`;
+    confirmBtn.textContent = `Continue with ${chosen.shortName}`;
     note.textContent = `Selected: ${chosen.name} · 12 tailored optimizations ready`;
   } else {
     confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Continue →';
+    confirmBtn.textContent = 'Continue';
     note.textContent = 'Select a game profile to continue.';
   }
 }
@@ -934,7 +931,6 @@ async function bootApp() {
   state.installedGames = installed || {};
 
   if (!state.gameId || !state.games.some((g) => g.id === state.gameId)) {
-    // First boot: show game selector immediately before running audit
     state.pendingGameId = Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
     openGamePicker(true);
   } else {
@@ -944,5 +940,4 @@ async function bootApp() {
   }
 }
 
-// Boot sequence
 bootApp();

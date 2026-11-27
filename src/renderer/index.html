@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
-  <title>BareFrame — Bare-Metal FPS &amp; Latency Optimizer</title>
+  <title>BareFrame — Windows Latency &amp; FPS Utility</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,14 +12,14 @@
   <header class="titlebar">
     <div class="titlebar-brand">
       <div class="logo-mark">
-        <img src="../../assets/icon.png" alt="BareFrame" width="24" height="24" style="border-radius:5px;display:block;" />
+        <img src="../../assets/icon.png" alt="BareFrame" width="22" height="22" style="display:block;" />
       </div>
-      <span class="brand-name">BARE<strong>FRAME</strong></span>
-      <span id="app-version-pill" class="version-pill">v1.0.2 FREE &amp; OSS</span>
+      <span class="brand-name">BareFrame</span>
+      <span id="app-version-pill" class="version-pill">v1.0.9</span>
     </div>
     <div class="titlebar-right">
-      <button id="btn-update-pill" class="update-pill hidden" type="button">↑ Update Available</button>
-      <div id="admin-badge" class="admin-badge">Checking privileges…</div>
+      <button id="btn-update-pill" class="update-pill hidden" type="button">Update Available</button>
+      <div id="admin-badge" class="admin-badge">Checking…</div>
       <div class="win-controls">
         <button id="btn-min" class="win-btn" title="Minimize">&#x2014;</button>
         <button id="btn-max" class="win-btn" title="Maximize">&#x25A1;</button>
@@ -41,107 +41,105 @@
         </button>
 
         <nav class="nav-list">
-        <button class="nav-item active" data-tab="overview">
-          <span class="nav-icon">◈</span>
-          <span>Live Audit</span>
-        </button>
-        <button class="nav-item" data-tab="tweaks">
-          <span class="nav-icon">⚡</span>
-          <span>Optimizer</span>
-          <span id="nav-tweaks-badge" class="nav-badge">—</span>
-        </button>
-        <button class="nav-item" data-tab="throttle">
-          <span class="nav-icon">∿</span>
-          <span>Throttle &amp; BIOS</span>
-        </button>
-        <button class="nav-item" data-tab="telemetry">
-          <span class="nav-icon">▲</span>
-          <span>Match Telemetry</span>
-        </button>
-        <button class="nav-item" data-tab="boost">
-          <span class="nav-icon">▶</span>
-          <span>Pre-Match Boost</span>
-        </button>
+          <button class="nav-item active" data-tab="overview">
+            <span class="nav-num">01</span>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" data-tab="tweaks">
+            <span class="nav-num">02</span>
+            <span>12 Tweaks</span>
+            <span id="nav-tweaks-badge" class="nav-badge">—</span>
+          </button>
+          <button class="nav-item" data-tab="throttle">
+            <span class="nav-num">03</span>
+            <span>Throttle &amp; BIOS</span>
+          </button>
+          <button class="nav-item" data-tab="telemetry">
+            <span class="nav-num">04</span>
+            <span>Match Logs</span>
+          </button>
+          <button class="nav-item" data-tab="boost">
+            <span class="nav-num">05</span>
+            <span>Pre-Match Boost</span>
+          </button>
 
-        <!-- Update Notification directly under Pre-Match Boost (appears when a new release exists) -->
-        <div id="sidebar-update-card" class="sidebar-update-card hidden">
-          <div class="sidebar-update-head">
-            <span class="update-dot" aria-hidden="true"></span>
-            <span id="sidebar-update-ver">Update Available</span>
-          </div>
-          <button id="btn-sidebar-install-update" class="btn-sidebar-update" type="button">Install Update</button>
-          <div id="sidebar-update-prog" class="sidebar-update-prog hidden">
-            <div class="sidebar-update-meta">
-              <span id="sidebar-update-status">Downloading…</span>
-              <span id="sidebar-update-pct">0%</span>
+          <!-- Update Notification directly under Pre-Match Boost (appears when a new release exists) -->
+          <div id="sidebar-update-card" class="sidebar-update-card hidden">
+            <div class="sidebar-update-head">
+              <span id="sidebar-update-ver">Update Available</span>
             </div>
-            <div class="sidebar-update-rail">
-              <div id="sidebar-update-fill" class="sidebar-update-fill" style="width:0%"></div>
+            <button id="btn-sidebar-install-update" class="btn-sidebar-update" type="button">Install Update</button>
+            <div id="sidebar-update-prog" class="sidebar-update-prog hidden">
+              <div class="sidebar-update-meta">
+                <span id="sidebar-update-status">Downloading…</span>
+                <span id="sidebar-update-pct">0%</span>
+              </div>
+              <div class="sidebar-update-rail">
+                <div id="sidebar-update-fill" class="sidebar-update-fill" style="width:0%"></div>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
       </div>
 
       <div class="sidebar-footer">
-        <div class="vanguard-pill">
-          <span class="dot-green"></span>
-          <span>Vanguard · FACEIT · EAC Safe</span>
-        </div>
-        <button id="btn-tip-sidebar" class="btn-tip btn-sm">♥ Tip on Ko-fi</button>
+        <div class="vanguard-pill">Vanguard · FACEIT · EAC safe</div>
+        <button id="btn-tip-sidebar" class="btn-tip btn-sm">Support on Ko-fi</button>
         <button id="btn-check-updates" class="btn-ghost btn-sm">Check for Updates</button>
-        <button id="btn-open-backups" class="btn-ghost btn-sm">Open Backups Folder</button>
+        <button id="btn-open-backups" class="btn-ghost btn-sm">Open Backups</button>
       </div>
     </aside>
 
     <!-- Main Workspace -->
     <main class="content">
-      <!-- OVERVIEW / 1-CLICK OPTIMIZE HOME TAB -->
+      <!-- OVERVIEW TAB -->
       <section id="tab-overview" class="tab-panel active">
         <div class="panel-header">
           <div>
-            <h1 id="overview-title">1-Click Bare-Metal Optimizer</h1>
-            <p id="overview-subtitle" class="subtitle">Automatic System Restore Point · 12 Verified Windows &amp; Game Tweaks · 1-Click Full Revert</p>
+            <h1 id="overview-title">System Overview</h1>
+            <p id="overview-subtitle" class="subtitle">Automatic Restore Point · 12 Reversible Tweaks · 1-Click Revert</p>
           </div>
           <div class="header-actions">
             <button id="btn-rescan" class="btn-secondary">Re-Scan PC</button>
-            <button id="btn-quick-opt" class="btn-ghost">Customize Tweaks →</button>
+            <button id="btn-quick-opt" class="btn-ghost">Inspect Tweaks</button>
           </div>
         </div>
 
-        <!-- HERO 1-CLICK OPTIMIZE CARD -->
+        <!-- READINESS & 1-CLICK APPLY PANEL -->
         <div class="card hero-opt-card">
           <div class="hero-opt-left">
-            <div class="score-ring-wrap">
-              <svg class="score-ring" viewBox="0 0 140 140">
-                <circle class="ring-bg" cx="70" cy="70" r="58" />
-                <circle id="score-ring-fg" class="ring-fg" cx="70" cy="70" r="58" stroke-dasharray="364.4" stroke-dashoffset="364.4" />
-              </svg>
-              <div class="score-center">
-                <div id="score-num" class="score-num">--</div>
-                <div class="score-label">BAREFRAME</div>
+            <div>
+              <div class="score-kicker">SYSTEM READINESS</div>
+              <div class="score-readout-row">
+                <span id="score-num" class="score-num">--</span>
+                <span class="score-denom">/100</span>
               </div>
             </div>
-            <div id="score-verdict" class="score-verdict">Scanning system…</div>
-            <div id="score-sub" class="score-sub">Analyzing 12 subsystems</div>
+            <div class="score-bar-track">
+              <div id="score-bar-fill" class="score-bar-fill"></div>
+            </div>
+            <div>
+              <div id="score-verdict" class="score-verdict">Scanning system…</div>
+              <div id="score-sub" class="score-sub">Auditing 12 subsystems</div>
+            </div>
           </div>
 
           <div class="hero-opt-right">
             <div id="hero-idle-state">
-              <h2 class="hero-cta-title">Lock Your 1% Lows. Zero OS Overhead.</h2>
+              <h2 class="hero-cta-title">Apply all tailored optimizations in one pass</h2>
               <p id="hero-cta-desc" class="hero-cta-desc">
-                Built for 240Hz–540Hz competitive play. Creates a System Restore Point first, then tunes Windows scheduling, timers, P-core power plans, USB/Ethernet latency, GPU MSI-X, Memory Compression, ShadowPlay, and game-specific configs automatically.
+                Creates a System Restore Point and exports registry and config backups first, then tunes Windows scheduling, timers, power plans, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and game configs.
               </p>
               <label class="hero-vbs-toggle">
                 <input type="checkbox" id="chk-hero-vbs" checked />
                 <div>
                   <strong>Include Bare-Metal Mode (Disable VBS &amp; Memory Integrity)</strong>
-                  <span class="pill-amber" style="margin-left:6px;">+10–18% CPU FPS</span>
-                  <div id="hero-vbs-sub" class="hero-vbs-sub">Leaves TPM 2.0 &amp; Secure Boot ON for anti-cheats. Disables WSL2/Hyper-V until reverted.</div>
+                  <span class="pill-opt" style="margin-left:6px;">+10–18% CPU FPS</span>
+                  <div id="hero-vbs-sub" class="hero-vbs-sub">Leaves TPM 2.0 &amp; Secure Boot enabled. Disables WSL2/Hyper-V until reverted.</div>
                 </div>
               </label>
               <div class="hero-btn-row">
-                <button id="btn-hero-optimize" class="btn-hero-big">⚡ OPTIMIZE</button>
+                <button id="btn-hero-optimize" class="btn-hero-big">Run Optimization</button>
                 <button id="btn-hero-revert" class="btn-danger-outline">Revert All</button>
               </div>
             </div>
@@ -149,7 +147,7 @@
             <!-- LIVE PROGRESS BAR STATE -->
             <div id="hero-progress-state" class="hidden">
               <div class="progress-top-row">
-                <span id="hero-progress-label" class="progress-label">Preparing backup &amp; Restore Point…</span>
+                <span id="hero-progress-label" class="progress-label">Creating backup &amp; Restore Point…</span>
                 <span id="hero-progress-pct" class="progress-pct">0%</span>
               </div>
               <div class="progress-track">
@@ -160,24 +158,24 @@
           </div>
         </div>
 
-        <!-- RESULTS BREAKDOWN CARD (SHOWN AFTER OPTIMIZATION FINISHES) -->
+        <!-- RESULTS BREAKDOWN CARD -->
         <div id="hero-results-card" class="card results-card hidden">
           <div class="card-header-row">
             <div>
-              <div class="card-title" id="hero-results-title">✓ Optimizations Completed</div>
-              <div class="subtitle" id="hero-results-sub">Every change applied cleanly with automatic backup saved.</div>
+              <div class="card-title" id="hero-results-title">Optimization Complete</div>
+              <div class="subtitle" id="hero-results-sub">All changes applied with backups saved.</div>
             </div>
             <div class="header-actions">
-              <button id="btn-results-bios" class="btn-secondary btn-sm">BIOS Unlock Guide</button>
-              <button id="btn-results-tip" class="btn-tip btn-sm">♥ Leave a Tip</button>
-              <button id="btn-results-reboot" class="btn-primary btn-sm">Reboot PC Now</button>
+              <button id="btn-results-bios" class="btn-secondary btn-sm">BIOS Guide</button>
+              <button id="btn-results-tip" class="btn-tip btn-sm">Support on Ko-fi</button>
+              <button id="btn-results-reboot" class="btn-primary btn-sm">Reboot Now</button>
             </div>
           </div>
           <div id="hero-results-list" class="results-list"></div>
         </div>
 
         <!-- Hardware Spec Matrix -->
-        <div class="card hw-card">
+        <div class="card">
           <div class="card-title">Detected Hardware &amp; Runtime</div>
           <div class="hw-grid" id="hw-grid">
             <div class="hw-item"><span class="hw-k">CPU</span><span class="hw-v" id="hw-cpu">Scanning…</span></div>
@@ -192,26 +190,26 @@
         <!-- Bottlenecks -->
         <div class="card">
           <div class="card-header-row">
-            <div class="card-title">Detected Bottlenecks &amp; Quick Wins</div>
+            <div class="card-title">Detected Bottlenecks</div>
             <span id="bottleneck-count" class="pill-neutral">Scanning…</span>
           </div>
           <div id="bottlenecks-list" class="bottlenecks-list">
-            <div class="empty-state">Running live Windows &amp; hardware inspection…</div>
+            <div class="empty-state">Running Windows and hardware audit…</div>
           </div>
         </div>
       </section>
 
-      <!-- OPTIMIZER / TWEAKS TAB -->
+      <!-- 12 TWEAKS TAB -->
       <section id="tab-tweaks" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>Hyper-Optimizer Suite</h1>
-            <p class="subtitle">Automatic System Restore Point &amp; Registry backup created before every apply</p>
+            <h1>Individual Tweaks</h1>
+            <p class="subtitle">System Restore Point and registry/config backups are created automatically before every run</p>
           </div>
           <div class="header-actions">
-            <button id="btn-select-safe" class="btn-ghost">Select All Safe</button>
-            <button id="btn-revert-all" class="btn-danger-outline">1-Click Full Revert</button>
-            <button id="btn-apply-tweaks" class="btn-primary">Apply Selected Tweaks</button>
+            <button id="btn-select-safe" class="btn-ghost">Select Standard (11)</button>
+            <button id="btn-revert-all" class="btn-danger-outline">Revert All</button>
+            <button id="btn-apply-tweaks" class="btn-primary btn-chamfer">Apply Selected</button>
           </div>
         </div>
 
@@ -220,15 +218,15 @@
         <details id="console-details" class="card console-details">
           <summary class="console-summary">
             <div class="console-summary-left">
-              <span class="card-title">Execution Console</span>
-              <span id="console-count-pill" class="pill-neutral">Optional · Ready</span>
+              <span class="card-title">PowerShell Output</span>
+              <span id="console-count-pill" class="pill-neutral">Ready</span>
             </div>
             <div class="console-summary-right">
               <button id="btn-reboot-now" type="button" class="btn-secondary btn-sm hidden">Reboot PC Now</button>
               <span class="expand-symbol" aria-hidden="true"></span>
             </div>
           </summary>
-          <pre id="tweak-console" class="console-out">Ready. Select optimizations above and click "Apply Selected Tweaks".</pre>
+          <pre id="tweak-console" class="console-out">Ready. Select tweaks above and click "Apply Selected".</pre>
         </details>
       </section>
 
@@ -236,12 +234,12 @@
       <section id="tab-throttle" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>35-Second CPU Throttle Detector &amp; BIOS Advisor</h1>
-            <p class="subtitle">Catches hidden 65W PL1 power limits &amp; thermal throttling past Intel/AMD's 28s Tau window</p>
+            <h1>CPU Throttle Detector &amp; BIOS Guide</h1>
+            <p class="subtitle">35-second sustained clock test to detect 65W PL1 power limits or thermal throttling past the 28s Tau window</p>
           </div>
           <div class="header-actions">
-            <button id="btn-run-throttle" class="btn-primary">Run 35s Clock Stress Test</button>
-            <button id="btn-reboot-bios" class="btn-secondary">Reboot Straight to UEFI BIOS</button>
+            <button id="btn-run-throttle" class="btn-primary btn-chamfer">Run 35s Clock Test</button>
+            <button id="btn-reboot-bios" class="btn-secondary">Reboot to UEFI BIOS</button>
           </div>
         </div>
 
@@ -249,31 +247,31 @@
           <div class="card">
             <div class="card-header-row">
               <div class="card-title">Sustained P-Core Clock Curve (MHz)</div>
-              <span id="throttle-verdict-pill" class="pill-neutral">Not Run Yet</span>
+              <span id="throttle-verdict-pill" class="pill-neutral">Not Run</span>
             </div>
             <div id="throttle-chart-wrap" class="chart-wrap">
-              <div class="empty-state">Click <strong>Run 35s Clock Stress Test</strong> to measure peak vs. sustained CPU frequency.</div>
+              <div class="empty-state">Run the 35s clock test to compare burst vs. sustained CPU frequency.</div>
             </div>
             <div id="throttle-summary" class="throttle-summary"></div>
           </div>
 
           <div class="card">
             <div class="card-header-row">
-              <div class="card-title" id="bios-card-title">Motherboard BIOS Playbook</div>
-              <span id="bios-key-pill" class="pill-cyan">Del / F2</span>
+              <div class="card-title" id="bios-card-title">Motherboard BIOS Guide</div>
+              <span id="bios-key-pill" class="pill-blue">Del / F2</span>
             </div>
-            <p class="muted-note">UEFI firmware settings cannot be written from Windows (and MSR tools are blocked by Vanguard). Follow this tailored checklist for your exact motherboard:</p>
+            <p class="muted-note">UEFI firmware settings cannot be written from Windows, and MSR drivers are blocked by anti-cheats. Use this checklist for your detected board:</p>
             <ol id="bios-steps" class="bios-steps"></ol>
           </div>
         </div>
       </section>
 
-      <!-- VALORANT MATCH TELEMETRY TAB -->
+      <!-- MATCH LOGS TAB -->
       <section id="tab-telemetry" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>Match Telemetry Analyzer</h1>
-            <p id="telemetry-subtitle" class="subtitle">Parses real frame-by-frame metrics directly from your local ShooterGame*.log files</p>
+            <h1>Match Log Telemetry</h1>
+            <p id="telemetry-subtitle" class="subtitle">Parses frame-time metrics directly from local VALORANT ShooterGame*.log files</p>
           </div>
           <div class="header-actions">
             <button id="btn-refresh-telemetry" class="btn-secondary">Refresh Logs</button>
@@ -284,22 +282,22 @@
         <div id="telemetry-kpis" class="kpi-row"></div>
         <div id="telemetry-tip-banner" class="tip-banner hidden">
           <div>
-            <strong id="telemetry-tip-headline">BareFrame boosted your FPS for $0!</strong>
-            <span class="tip-banner-sub">BareFrame is 100% free &amp; open-source with zero paywalls. Tips on Ko-fi fund code-signing &amp; updates.</span>
+            <strong id="telemetry-tip-headline">Higher average FPS recorded across local logs.</strong>
+            <span class="tip-banner-sub">BareFrame is MIT open-source with no paywalls. Optional Ko-fi tips help cover signing and maintenance.</span>
           </div>
-          <button id="btn-tip-banner" class="btn-tip btn-sm">♥ Tip on Ko-fi</button>
+          <button id="btn-tip-banner" class="btn-tip btn-sm">Support on Ko-fi</button>
         </div>
 
         <div class="card">
           <div class="card-header-row">
-            <div class="card-title">Match-by-Match FPS &amp; Sub-240 Dip Progression</div>
+            <div class="card-title">Session FPS &amp; Sub-240 Dip History</div>
             <span id="telemetry-bottleneck-pill" class="pill-neutral">—</span>
           </div>
           <div id="telemetry-chart-wrap" class="chart-wrap"></div>
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">Parsed Session History</div>
+          <div class="card-title" style="margin-bottom:10px;">Parsed Sessions</div>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
@@ -327,12 +325,12 @@
         <div class="panel-header">
           <div>
             <h1>Pre-Match Boost</h1>
-            <p class="subtitle">Clear background browsers, launchers, and CPU hogs in one click before queueing</p>
+            <p class="subtitle">Close heavy browsers, launchers, and background apps before queuing</p>
           </div>
           <div class="header-actions">
-            <button id="btn-scan-hogs" class="btn-secondary">Refresh Processes</button>
-            <button id="btn-purge-hogs" class="btn-primary">Purge Selected Hogs</button>
-            <button id="btn-launch-val" class="btn-emerald">Launch VALORANT</button>
+            <button id="btn-scan-hogs" class="btn-secondary">Refresh</button>
+            <button id="btn-purge-hogs" class="btn-primary">Close Selected</button>
+            <button id="btn-launch-val" class="btn-blue-solid">Launch Game</button>
           </div>
         </div>
 
@@ -342,19 +340,19 @@
             <div class="kpi-val" id="boost-free-ram">-- GB</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Background Hogs Found</div>
+            <div class="kpi-label">Background Apps Found</div>
             <div class="kpi-val" id="boost-hog-count">--</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Reclaimable RAM</div>
-            <div class="kpi-val accent-mint" id="boost-reclaim-mb">-- MB</div>
+            <div class="kpi-val accent-blue" id="boost-reclaim-mb">-- MB</div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px;">Active Background Processes</div>
+          <div class="card-title" style="margin-bottom:10px;">Running Background Processes</div>
           <div id="boost-list" class="boost-list">
-            <div class="empty-state">Scanning active background processes…</div>
+            <div class="empty-state">Scanning running background processes…</div>
           </div>
         </div>
       </section>
@@ -368,7 +366,7 @@
         <div id="game-picker-kicker" class="game-picker-kicker">FIRST-TIME SETUP</div>
         <h1 id="game-picker-title">What game are you optimizing for?</h1>
         <p class="game-picker-sub">
-          BareFrame tailors CPU priority (IFEO), Windows Defender exclusions, config tweaks, and Pre-Match Boost for your game. You can switch profiles anytime from the sidebar.
+          BareFrame adjusts CPU priority (IFEO), Windows Defender exclusions, config tweaks, and Pre-Match Boost for your selected game. You can switch anytime from the sidebar.
         </p>
       </div>
 
@@ -378,7 +376,7 @@
         <div id="game-picker-selected-note" class="game-picker-note">Select a game profile to continue.</div>
         <div class="game-picker-actions">
           <button id="btn-game-picker-cancel" class="btn-ghost hidden" type="button">Cancel</button>
-          <button id="btn-game-picker-confirm" class="btn-primary" type="button" disabled>Continue →</button>
+          <button id="btn-game-picker-confirm" class="btn-primary btn-chamfer" type="button" disabled>Continue</button>
         </div>
       </div>
     </div>
@@ -399,14 +397,14 @@
   <!-- Auto-Update Modal -->
   <div id="update-modal-backdrop" class="modal-backdrop hidden">
     <div class="modal update-modal">
-      <h2 id="update-modal-title">BareFrame Update Available</h2>
-      <p id="update-modal-body">A newer version of BareFrame is ready to download from GitHub Releases.</p>
-      <div id="update-progress-wrap" class="hidden" style="margin-bottom:16px;">
+      <h2 id="update-modal-title">Update Available</h2>
+      <p id="update-modal-body">A newer build of BareFrame is available on GitHub Releases.</p>
+      <div id="update-progress-wrap" class="hidden" style="margin-bottom:14px;">
         <div class="progress-top-row" style="margin-bottom:6px;">
-          <span id="update-progress-text" style="font-size:12.5px;color:#A1AAC0;">Downloading…</span>
+          <span id="update-progress-text" style="font-size:12px;color:#a0a8b8;">Downloading…</span>
           <span id="update-progress-pct" class="progress-pct" style="font-size:14px;">0%</span>
         </div>
-        <div class="progress-track" style="height:10px;">
+        <div class="progress-track">
           <div id="update-progress-fill" class="progress-fill" style="width:0%"></div>
         </div>
       </div>
@@ -417,25 +415,23 @@
     </div>
   </div>
 
-  <!-- Tip / Support Modal -->
+  <!-- Support Modal -->
   <div id="tip-modal-backdrop" class="modal-backdrop hidden">
     <div class="modal tip-modal">
-      <div class="tip-heart">♥</div>
-      <h2 id="tip-modal-title">Enjoying Smoother 1% Lows?</h2>
+      <h2 id="tip-modal-title">Support BareFrame</h2>
       <p id="tip-modal-body">
-        BareFrame is <strong>100% free &amp; open-source</strong> — no subscriptions, no ads, no paid tweak packs.
-        If it boosted your frames or killed mid-fight dips, leaving a tip on Ko-fi helps fund Windows code-signing &amp; future updates!
+        BareFrame is free and MIT open-source with no paywalls, accounts, or ads. Optional Ko-fi tips (0% platform fee) help cover Windows code-signing and ongoing hardware testing.
       </p>
       <div class="tip-btn-grid">
-        <button id="btn-tip-kofi" class="btn-primary">♥ Tip on Ko-fi (0% Fee)</button>
-        <button id="btn-tip-gh" class="btn-ghost">★ Star BareFrame on GitHub (Free)</button>
+        <button id="btn-tip-kofi" class="btn-blue-solid">Support on Ko-fi (0% Fee)</button>
+        <button id="btn-tip-gh" class="btn-ghost">View / Star on GitHub</button>
       </div>
       <div class="tip-modal-footer">
         <label class="tip-optout">
           <input type="checkbox" id="chk-tip-optout" />
-          <span>Don't prompt me automatically again</span>
+          <span>Do not show this again automatically</span>
         </label>
-        <button id="btn-tip-close" class="btn-ghost btn-sm">Maybe Later</button>
+        <button id="btn-tip-close" class="btn-ghost btn-sm">Close</button>
       </div>
     </div>
   </div>
