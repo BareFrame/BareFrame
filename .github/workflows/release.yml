@@ -28,7 +28,9 @@ jobs:
           node node_modules/electron/install.js
 
       - name: Build Windows installers
-        run: npm run build
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npx electron-builder --win --publish never
 
       # Signs Setup & Portable EXEs using Microsoft Azure Trusted Signing
       # Add AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
