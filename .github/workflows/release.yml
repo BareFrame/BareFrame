@@ -34,8 +34,16 @@ jobs:
       # Add AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,
       # AZURE_SIGNING_ENDPOINT, AZURE_SIGNING_ACCOUNT, AZURE_SIGNING_PROFILE
       # to your GitHub Repository Secrets.
+      - name: Check signing configuration
+        id: sign_check
+        shell: pwsh
+        env:
+          HAS_AZURE_SIGN: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+        run: |
+          if ($env:HAS_AZURE_SIGN) { "enabled=true" >> $env:GITHUB_OUTPUT } else { "enabled=false" >> $env:GITHUB_OUTPUT }
+
       - name: Sign Windows installers (Azure Trusted Signing)
-        if: ${{ secrets.AZURE_SIGNING_ACCOUNT != '' }}
+        if: steps.sign_check.outputs.enabled == 'true'
         uses: azure/trusted-signing-action@v0.5.10
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
