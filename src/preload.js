@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('frameforge', {
   openExternal: (url) => ipcRenderer.invoke('external:open', url),
 
   getAppVersion: () => ipcRenderer.invoke('app:version'),
+  relaunchAsAdmin: () => ipcRenderer.invoke('system:relaunchAdmin'),
   checkForUpdate: () => ipcRenderer.invoke('updater:check'),
   installUpdate: (info) => ipcRenderer.invoke('updater:install', info),
   onUpdateProgress: (cb) => {

@@ -132,6 +132,19 @@ ipcMain.handle('external:open', async (_evt, url) => {
 
 ipcMain.handle('app:version', () => app.getVersion());
 
+ipcMain.handle('system:relaunchAdmin', async () => {
+  const exePath = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  const escapedExe = exePath.replace(/'/g, "''");
+  const isDev = !app.isPackaged;
+  const argPart = isDev ? ` -ArgumentList '${process.cwd().replace(/'/g, "''")}'` : '';
+  const res = await runPS(`Start-Process -FilePath '${escapedExe}'${argPart} -Verb RunAs`, { timeoutMs: 30000 });
+  if (res.code === 0) {
+    setTimeout(() => app.quit(), 450);
+    return { ok: true };
+  }
+  return { ok: false, error: res.stderr || 'Elevation canceled' };
+});
+
 ipcMain.handle('updater:check', async () => {
   return checkForUpdate(app.getVersion());
 });

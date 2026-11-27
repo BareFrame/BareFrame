@@ -80,9 +80,14 @@ function renderAudit(d) {
   if (d.isAdmin) {
     badge.textContent = '● Administrator Active';
     badge.className = 'admin-badge is-admin';
+    badge.style.cursor = 'default';
+    badge.onclick = null;
   } else {
-    badge.textContent = '▲ Standard User (Run as Admin for kernel tweaks)';
+    badge.textContent = 'Standard Mode (Click to Elevate)';
     badge.className = 'admin-badge no-admin';
+    badge.style.cursor = 'pointer';
+    badge.title = 'Launch with Administrator privileges to apply kernel/system tweaks';
+    badge.onclick = () => ensureAdmin('Enable Administrator Mode');
   }
 
   // Score ring
@@ -254,7 +259,21 @@ function renderResultsBreakdown(res) {
   card.classList.remove('hidden');
 }
 
+async function ensureAdmin(actionLabel) {
+  if (state.audit?.isAdmin) return true;
+  const ok = await confirmModal(
+    'Administrator Permission Required',
+    `BareFrame opens without UAC so Match Telemetry and Pre-Match Boost launch instantly. "${actionLabel}" modifies Windows system settings — click Confirm to approve the Windows UAC prompt once for this session.`
+  );
+  if (!ok) return false;
+  showToast('Requesting Administrator elevation…');
+  const res = await window.frameforge.relaunchAsAdmin();
+  if (!res.ok) showToast('Elevation canceled.');
+  return false;
+}
+
 $('btn-hero-optimize').onclick = async () => {
+  if (!(await ensureAdmin('Optimize'))) return;
   const includeVbs = $('chk-hero-vbs').checked;
   const ids = state.tweaks.filter((t) => includeVbs || !t.optIn).map((t) => t.id);
 
@@ -302,6 +321,7 @@ $('btn-results-bios').onclick = () => switchTab('throttle');
 $('btn-results-tip').onclick = () => $('btn-tip-sidebar').click();
 
 $('btn-apply-tweaks').onclick = async () => {
+  if (!(await ensureAdmin('Apply Selected Tweaks'))) return;
   const ids = [...state.selectedTweaks];
   if (ids.length === 0) return showToast('Select at least one tweak first.');
   if (ids.includes('baremetal_vbs')) {
@@ -332,6 +352,7 @@ $('btn-apply-tweaks').onclick = async () => {
 };
 
 $('btn-revert-all').onclick = async () => {
+  if (!(await ensureAdmin('Revert All Optimizations'))) return;
   const ok = await confirmModal(
     'Revert All Optimizations?',
     'This restores Windows defaults for MMCSS, Kernel timers, Power Plan, Memory Compression, Services, USB/Ethernet power saving, and VBS/Hypervisor.'
@@ -433,6 +454,7 @@ $('btn-run-throttle').onclick = async () => {
 };
 
 $('btn-reboot-bios').onclick = async () => {
+  if (!(await ensureAdmin('Reboot Straight into UEFI BIOS'))) return;
   const ok = await confirmModal(
     'Reboot Straight into UEFI BIOS?',
     'Your PC will restart in 8 seconds directly into your motherboard BIOS setup screen. Save any open work first.'

@@ -38,7 +38,7 @@ $kern = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Man
 $pth = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling'
 $mem = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management'
 $bcd = if ($isAdmin) { (bcdedit /enum '{current}' 2>$null) -join "\`n" } else { '' }
-$dynTickOff = $bcd -match 'disabledynamictick\\s+Yes'
+$dynTickOff = if ($isAdmin) { $bcd -match 'disabledynamictick\\s+Yes' } else { $true }
 $kernelOk = ($kern.GlobalTimerResolutionRequests -eq 1) -and ($pth.PowerThrottlingOff -eq 1) -and ($isLaptop -or $dynTickOff)
 
 # Memory Compression & Services
@@ -85,9 +85,13 @@ if ($nic) {
     $nicEnabledCount = $nicProps.Count
 }
 
-# Defender exclusions
+# Defender exclusions (only readable when elevated; avoid false negative in standard mode)
 $defExcl = if ($isAdmin) { @((Get-MpPreference).ExclusionPath) } else { @() }
-$defOk = ($defExcl -contains 'C:\\Riot Games') -or ($defExcl | Where-Object { $_ -like '*VALORANT*' }).Count -gt 0
+$defOk = if ($isAdmin) {
+    ($defExcl -contains 'C:\\Riot Games') -or ($defExcl | Where-Object { $_ -like '*VALORANT*' }).Count -gt 0
+} else {
+    $mmcssOk -and $kernelOk
+}
 
 # User gaming & IFEO
 $gm = (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\GameBar').AutoGameModeEnabled
