@@ -95,7 +95,7 @@ function renderAudit(d) {
   const offset = circ - (circ * d.score) / 100;
   const ring = $('score-ring-fg');
   ring.style.strokeDashoffset = offset;
-  ring.style.stroke = d.score >= 85 ? '#00E5A0' : d.score >= 60 ? '#F59E0B' : '#FF4655';
+  ring.style.stroke = d.score >= 85 ? '#38BDF8' : d.score >= 60 ? '#0A84FF' : '#FF2D55';
   $('score-num').textContent = d.score;
   $('score-verdict').textContent =
     d.score >= 90 ? 'Tournament Ready' : d.score >= 70 ? 'Well Optimized' : d.score >= 45 ? 'Bottlenecks Found' : 'Heavy Overhead';
@@ -413,7 +413,7 @@ function renderThrottleChart(samples) {
         <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#8B97AD" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
-      <polyline fill="none" stroke="#00E5A0" stroke-width="2.5" points="${pts}" />
+      <polyline fill="none" stroke="#38BDF8" stroke-width="2.5" points="${pts}" />
       ${samples
         .map(
           (s) => `
@@ -549,8 +549,8 @@ function renderTelemetry(data) {
           const isLast = i === sessions.length - 1;
           return `
             <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
-                  fill="${isLast ? '#00E5A0' : 'rgba(255,70,85,0.72)'}" />
-            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#00E5A0' : '#F1F5F9'}" font-size="11" font-weight="800" text-anchor="middle">${m.avgFps} FPS</text>
+                  fill="${isLast ? '#0A84FF' : 'rgba(255,45,85,0.75)'}" />
+            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#38BDF8' : '#F1F5F9'}" font-size="11" font-weight="800" text-anchor="middle">${m.avgFps} FPS</text>
             <text x="${cx}" y="${H - 15}" fill="#8B97AD" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
             <text x="${cx}" y="${H - 3}" fill="#F59E0B" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
         })

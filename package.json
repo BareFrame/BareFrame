@@ -1,7 +1,7 @@
 {
   "name": "bareframe",
   "productName": "BareFrame",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Bare-Metal Windows Performance & Latency Optimizer for Competitive PC Gamers",
   "main": "src/main.js",
   "author": "BareFrame",

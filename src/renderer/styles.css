@@ -8,11 +8,12 @@
   --border-strong: rgba(255, 255, 255, 0.15);
   --text-main: #F1F5F9;
   --text-muted: #8B97AD;
-  --crimson: #FF4655;
-  --crimson-glow: rgba(255, 70, 85, 0.25);
-  --mint: #00E5A0;
-  --mint-soft: rgba(0, 229, 160, 0.14);
+  --crimson: #FF2D55;
+  --crimson-glow: rgba(255, 45, 85, 0.28);
+  --mint: #38BDF8;
+  --mint-soft: rgba(10, 132, 255, 0.16);
   --cyan: #38BDF8;
+  --blue: #0A84FF;
   --amber: #F59E0B;
   --amber-soft: rgba(245, 158, 11, 0.14);
   --radius: 12px;
@@ -656,8 +657,8 @@ button { font-family: var(--font); }
 .progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #FF4655, #00E5A0);
-  box-shadow: 0 0 18px rgba(0,229,160,0.45);
+  background: linear-gradient(90deg, #FF2D55, #0A84FF, #38BDF8);
+  box-shadow: 0 0 18px rgba(10, 132, 255, 0.45);
   transition: width 0.35s ease;
 }
 .progress-step {
