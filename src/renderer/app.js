@@ -708,15 +708,11 @@ async function initUpdater() {
     const pill = $('app-version-pill');
     if (pill) pill.textContent = `v${ver}`;
   } catch {}
-  runUpdateCheck(true);
+  runUpdateCheck();
+  setInterval(() => runUpdateCheck(), 30 * 60 * 1000);
 }
 
-async function runUpdateCheck(silent = false) {
-  const btn = $('btn-check-updates');
-  if (!silent && btn) {
-    btn.disabled = true;
-    btn.textContent = 'Checking…';
-  }
+async function runUpdateCheck() {
   try {
     const info = await window.frameforge.checkForUpdate();
     latestUpdateInfo = info;
@@ -731,18 +727,9 @@ async function runUpdateCheck(silent = false) {
       $('btn-sidebar-install-update').disabled = false;
       $('sidebar-update-prog').classList.add('hidden');
       sideCard.classList.remove('hidden');
-
-      if (!silent) openUpdateModal(info);
-    } else if (!silent) {
-      showToast(`Up to date (v${info.currentVersion}).`);
     }
-  } catch (err) {
-    if (!silent) showToast(`Update check failed: ${err.message}`);
-  } finally {
-    if (!silent && btn) {
-      btn.disabled = false;
-      btn.textContent = 'Check for Updates';
-    }
+  } catch {
+    // Silent background update check
   }
 }
 
@@ -805,7 +792,6 @@ $('btn-update-pill').onclick = () => {
   if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
 };
 $('btn-sidebar-install-update').onclick = triggerInstallUpdate;
-$('btn-check-updates').onclick = () => runUpdateCheck(false);
 $('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
 $('btn-update-install').onclick = triggerInstallUpdate;
 
