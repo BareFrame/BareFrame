@@ -654,26 +654,135 @@ button { font-family: var(--font); }
   color: var(--text-muted);
 }
 
-/* Completed Optimizations Breakdown */
-.results-card { border-color: rgba(0,229,160,0.35); }
+/* Completed Optimizations Breakdown (+ / - Expandable like website) */
+.results-card { border-color: rgba(56,189,248,0.35); }
 .results-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .result-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 11px 13px;
-  border-radius: 9px;
-  background: rgba(0,229,160,0.05);
-  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 10px;
+  background: rgba(56,189,248,0.06);
+  border: 1px solid rgba(56,189,248,0.22);
+  padding: 0;
+  overflow: hidden;
 }
 .result-item.is-skip { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.25); }
 .result-item.is-err { background: rgba(255,70,85,0.08); border-color: rgba(255,70,85,0.3); }
-.result-check { font-size: 14px; font-weight: 900; color: var(--mint); flex-shrink: 0; margin-top: 1px; }
+.result-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 13px;
+  cursor: pointer;
+}
+.result-summary::-webkit-details-marker { display: none; }
+.result-summary-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.result-check { font-size: 13.5px; font-weight: 900; color: var(--cyan); flex-shrink: 0; }
 .result-item.is-skip .result-check { color: var(--amber); }
 .result-item.is-err .result-check { color: var(--crimson); }
-.result-name { font-size: 13px; font-weight: 700; color: #fff; }
-.result-detail { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.result-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 13px 11px 32px;
+  line-height: 1.45;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 8px;
+}
+
+/* Shared + / - Expandable Toggle (matches website FAQ style) */
+.expand-symbol {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--cyan);
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.expand-symbol::before { content: "+"; }
+details[open] > summary .expand-symbol::before { content: "−"; }
+details[open] > summary .expand-symbol { color: var(--crimson); }
+
+/* Compact + / - Tweak Cards */
+.tweak-card {
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s, background 0.15s;
+}
+.tweak-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); }
+.tweak-card.opt-in { border-color: rgba(245,158,11,0.28); }
+.tweak-row-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 15px;
+}
+.tweak-check-wrap {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  cursor: pointer;
+  min-width: 0;
+  flex: 1;
+}
+.tweak-badges {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.expand-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--cyan);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s, color 0.14s, transform 90ms ease-out;
+}
+.expand-btn:hover { background: rgba(255,255,255,0.1); }
+.expand-btn:active { transform: scale(0.92); }
+.expand-btn.is-open { color: var(--crimson); border-color: rgba(255,70,85,0.35); }
+.tweak-desc-drawer {
+  padding: 10px 15px 13px 44px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+}
+
+/* Optional Collapsible Execution Console */
+.console-details { padding: 0; overflow: hidden; }
+.console-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+}
+.console-summary::-webkit-details-marker { display: none; }
+.console-summary-left, .console-summary-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.console-details .console-out {
+  margin: 0 16px 16px;
+}

@@ -187,13 +187,19 @@
 
         <div id="tweaks-list" class="tweaks-list"></div>
 
-        <div class="card console-card">
-          <div class="card-header-row">
-            <div class="card-title">Execution Log</div>
-            <button id="btn-reboot-now" class="btn-secondary btn-sm hidden">Reboot PC Now</button>
-          </div>
+        <details id="console-details" class="card console-details">
+          <summary class="console-summary">
+            <div class="console-summary-left">
+              <span class="card-title">Execution Console</span>
+              <span id="console-count-pill" class="pill-neutral">Optional · Ready</span>
+            </div>
+            <div class="console-summary-right">
+              <button id="btn-reboot-now" type="button" class="btn-secondary btn-sm hidden">Reboot PC Now</button>
+              <span class="expand-symbol" aria-hidden="true"></span>
+            </div>
+          </summary>
           <pre id="tweak-console" class="console-out">Ready. Select optimizations above and click "Apply Selected Tweaks".</pre>
-        </div>
+        </details>
       </section>
 
       <!-- THROTTLE & BIOS TAB -->

@@ -156,21 +156,22 @@ function renderTweaks() {
       const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-cyan';
       const safetyCls = t.optIn ? 'pill-amber' : 'pill-green';
       return `
-      <label class="tweak-row ${t.optIn ? 'opt-in' : ''}">
-        <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
-        <div class="tweak-info">
-          <div class="tweak-top">
+      <div class="tweak-card ${t.optIn ? 'opt-in' : ''}">
+        <div class="tweak-row-compact">
+          <label class="tweak-check-wrap">
+            <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
             <span class="tweak-name">${t.name}</span>
+          </label>
+          <div class="tweak-badges">
             <span class="${impactCls}">${t.impact}</span>
             <span class="${safetyCls}">${t.safety}</span>
             ${t.requiresReboot ? '<span class="pill-neutral">Reboot</span>' : ''}
+            <span class="${done ? 'pill-green' : 'pill-neutral'}">${done ? 'OPTIMIZED' : 'STOCK'}</span>
+            <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
-          <div class="tweak-desc">${t.description}</div>
         </div>
-        <div class="tweak-status">
-          <span class="${done ? 'pill-green' : 'pill-neutral'}">${done ? 'OPTIMIZED' : 'STOCK'}</span>
-        </div>
-      </label>`;
+        <div class="tweak-desc-drawer hidden">${t.description}</div>
+      </div>`;
     })
     .join('');
 
@@ -178,6 +179,16 @@ function renderTweaks() {
     chk.onchange = () => {
       if (chk.checked) state.selectedTweaks.add(chk.dataset.id);
       else state.selectedTweaks.delete(chk.dataset.id);
+    };
+  });
+
+  container.querySelectorAll('.expand-btn').forEach((btn) => {
+    btn.onclick = () => {
+      const drawer = btn.closest('.tweak-card').querySelector('.tweak-desc-drawer');
+      const open = drawer.classList.toggle('hidden') === false;
+      btn.textContent = open ? '−' : '+';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.classList.toggle('is-open', open);
     };
   });
 }
@@ -190,10 +201,21 @@ $('btn-select-safe').onclick = () => {
   renderTweaks();
 };
 
+let consoleLineCount = 0;
+function resetConsole(initialLine) {
+  consoleLineCount = 1;
+  $('tweak-console').textContent = initialLine;
+  const pill = $('console-count-pill');
+  if (pill) pill.textContent = '1 line';
+}
+
 window.frameforge.onTweakLog((line) => {
   const pre = $('tweak-console');
   pre.textContent += `\n${line}`;
   pre.scrollTop = pre.scrollHeight;
+  consoleLineCount++;
+  const pill = $('console-count-pill');
+  if (pill) pill.textContent = `${consoleLineCount} lines`;
 });
 
 window.frameforge.onTweakProgress((prog) => {
@@ -208,21 +230,24 @@ function renderResultsBreakdown(res) {
   const list = $('hero-results-list');
   $('hero-results-title').textContent = `✓ Optimization Complete — ${res.applied} Modules Applied`;
   $('hero-results-sub').textContent = res.requiresReboot
-    ? 'Reboot your PC once so kernel, timer, and Bare-Metal changes activate completely. (For BIOS power limits, open BIOS Unlock Guide.)'
-    : 'All optimizations are live immediately. Backup & Restore Point saved.';
+    ? 'Click + on any item for details. Reboot once so kernel & Bare-Metal changes activate.'
+    : 'All optimizations are live immediately. Click + on any item for details.';
 
   list.innerHTML = (res.results || [])
     .map((r) => {
       const cls = r.status === 'DONE' ? '' : r.status === 'SKIPPED' ? 'is-skip' : 'is-err';
       const icon = r.status === 'DONE' ? '✓' : r.status === 'SKIPPED' ? '!' : '✕';
       return `
-      <div class="result-item ${cls}">
-        <span class="result-check">${icon}</span>
-        <div>
-          <div class="result-name">${r.name}</div>
-          <div class="result-detail">${r.detail}</div>
-        </div>
-      </div>`;
+      <details class="result-item ${cls}">
+        <summary class="result-summary">
+          <span class="result-summary-left">
+            <span class="result-check">${icon}</span>
+            <span class="result-name">${r.name}</span>
+          </span>
+          <span class="expand-symbol" aria-hidden="true"></span>
+        </summary>
+        <div class="result-detail">${r.detail}</div>
+      </details>`;
     })
     .join('');
 
@@ -247,7 +272,7 @@ $('btn-hero-optimize').onclick = async () => {
   $('hero-progress-fill').style.width = '3%';
   $('hero-progress-pct').textContent = '3%';
   $('hero-progress-label').textContent = 'Creating System Restore Point & Registry/Config Backups…';
-  $('tweak-console').textContent = `Running 1-Click Optimization (${ids.length} modules)…`;
+  resetConsole(`Running 1-Click Optimization (${ids.length} modules)…`);
 
   try {
     const res = await window.frameforge.applyTweaks(ids);
@@ -286,7 +311,7 @@ $('btn-apply-tweaks').onclick = async () => {
     );
     if (!ok) return;
   }
-  $('tweak-console').textContent = `Applying ${ids.length} optimization(s)… creating backup & Restore Point first…`;
+  resetConsole(`Applying ${ids.length} optimization(s)… creating backup & Restore Point first…`);
   $('btn-apply-tweaks').disabled = true;
   try {
     const res = await window.frameforge.applyTweaks(ids);
@@ -312,7 +337,7 @@ $('btn-revert-all').onclick = async () => {
     'This restores Windows defaults for MMCSS, Kernel timers, Power Plan, Memory Compression, Services, USB/Ethernet power saving, and VBS/Hypervisor.'
   );
   if (!ok) return;
-  $('tweak-console').textContent = 'Reverting all BareFrame tweaks back to stock Windows defaults…';
+  resetConsole('Reverting all BareFrame tweaks back to stock Windows defaults…');
   $('btn-revert-all').disabled = true;
   try {
     const res = await window.frameforge.revertTweaks([]);
@@ -327,7 +352,9 @@ $('btn-revert-all').onclick = async () => {
   }
 };
 
-$('btn-reboot-now').onclick = async () => {
+$('btn-reboot-now').onclick = async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   const ok = await confirmModal('Reboot PC Now?', 'Windows will restart in 8 seconds so all kernel and timer tweaks take full effect.');
   if (ok) {
     await window.frameforge.rebootWindows();
