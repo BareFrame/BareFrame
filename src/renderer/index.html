@@ -15,9 +15,10 @@
         <img src="../../assets/icon.png" alt="BareFrame" width="24" height="24" style="border-radius:5px;display:block;" />
       </div>
       <span class="brand-name">BARE<strong>FRAME</strong></span>
-      <span class="version-pill">v1.0 FREE &amp; OSS</span>
+      <span id="app-version-pill" class="version-pill">v1.0.2 FREE &amp; OSS</span>
     </div>
     <div class="titlebar-right">
+      <button id="btn-update-pill" class="update-pill hidden" type="button">↑ Update Available</button>
       <div id="admin-badge" class="admin-badge">Checking privileges…</div>
       <div class="win-controls">
         <button id="btn-min" class="win-btn" title="Minimize">&#x2014;</button>
@@ -60,6 +61,7 @@
           <span>Vanguard · FACEIT · EAC Safe</span>
         </div>
         <button id="btn-tip-sidebar" class="btn-tip btn-sm">♥ Tip on Ko-fi</button>
+        <button id="btn-check-updates" class="btn-ghost btn-sm">Check for Updates</button>
         <button id="btn-open-backups" class="btn-ghost btn-sm">Open Backups Folder</button>
       </div>
     </aside>
@@ -338,6 +340,27 @@
       <div class="modal-actions">
         <button id="modal-cancel" class="btn-ghost">Cancel</button>
         <button id="modal-confirm" class="btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-Update Modal -->
+  <div id="update-modal-backdrop" class="modal-backdrop hidden">
+    <div class="modal update-modal">
+      <h2 id="update-modal-title">BareFrame Update Available</h2>
+      <p id="update-modal-body">A newer version of BareFrame is ready to download from GitHub Releases.</p>
+      <div id="update-progress-wrap" class="hidden" style="margin-bottom:16px;">
+        <div class="progress-top-row" style="margin-bottom:6px;">
+          <span id="update-progress-text" style="font-size:12.5px;color:#A1AAC0;">Downloading…</span>
+          <span id="update-progress-pct" class="progress-pct" style="font-size:14px;">0%</span>
+        </div>
+        <div class="progress-track" style="height:10px;">
+          <div id="update-progress-fill" class="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-update-later" class="btn-ghost">Later</button>
+        <button id="btn-update-install" class="btn-primary">Download &amp; Install</button>
       </div>
     </div>
   </div>

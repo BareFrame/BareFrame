@@ -38,4 +38,13 @@ contextBridge.exposeInMainWorld('frameforge', {
   openBackups: () => ipcRenderer.invoke('backups:open'),
   getSupportConfig: () => ipcRenderer.invoke('support:config'),
   openExternal: (url) => ipcRenderer.invoke('external:open', url),
+
+  getAppVersion: () => ipcRenderer.invoke('app:version'),
+  checkForUpdate: () => ipcRenderer.invoke('updater:check'),
+  installUpdate: (info) => ipcRenderer.invoke('updater:install', info),
+  onUpdateProgress: (cb) => {
+    const handler = (_e, prog) => cb(prog);
+    ipcRenderer.on('updater:progress', handler);
+    return () => ipcRenderer.removeListener('updater:progress', handler);
+  },
 });

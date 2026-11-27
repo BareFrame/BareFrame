@@ -656,7 +656,87 @@ $('btn-tip-banner').onclick = () =>
   );
 $('btn-tip-close').onclick = closeTipModal;
 
+// ---------------- AUTO-UPDATER (GitHub Releases) ----------------
+let latestUpdateInfo = null;
+
+async function initUpdater() {
+  try {
+    const ver = await window.frameforge.getAppVersion();
+    const pill = $('app-version-pill');
+    if (pill) pill.textContent = `v${ver} FREE & OSS`;
+  } catch {}
+  runUpdateCheck(true);
+}
+
+async function runUpdateCheck(silent = false) {
+  const btn = $('btn-check-updates');
+  if (!silent && btn) {
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+  }
+  try {
+    const info = await window.frameforge.checkForUpdate();
+    latestUpdateInfo = info;
+    if (info.hasUpdate && info.downloadUrl) {
+      const upPill = $('btn-update-pill');
+      upPill.textContent = `↑ Update v${info.latestVersion}`;
+      upPill.classList.remove('hidden');
+      if (!silent) openUpdateModal(info);
+    } else if (!silent) {
+      showToast(`You're on the latest version (v${info.currentVersion}).`);
+    }
+  } catch (err) {
+    if (!silent) showToast(`Update check failed: ${err.message}`);
+  } finally {
+    if (!silent && btn) {
+      btn.disabled = false;
+      btn.textContent = 'Check for Updates';
+    }
+  }
+}
+
+function openUpdateModal(info) {
+  $('update-modal-title').textContent = `Update to BareFrame v${info.latestVersion}`;
+  $('update-modal-body').textContent = `Current: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). BareFrame will download the official GitHub Release and launch the update automatically.`;
+  $('update-progress-wrap').classList.add('hidden');
+  $('btn-update-install').disabled = false;
+  $('btn-update-install').textContent = 'Download & Install';
+  $('update-modal-backdrop').classList.remove('hidden');
+}
+
+window.frameforge.onUpdateProgress((p) => {
+  $('update-progress-fill').style.width = `${p.pct}%`;
+  $('update-progress-pct').textContent = `${p.pct}%`;
+  $('update-progress-text').textContent = `Downloading… ${p.receivedMB} / ${p.totalMB} MB`;
+});
+
+$('btn-update-pill').onclick = () => {
+  if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
+};
+$('btn-check-updates').onclick = () => runUpdateCheck(false);
+$('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
+$('btn-update-install').onclick = async () => {
+  if (!latestUpdateInfo || !latestUpdateInfo.downloadUrl) return;
+  $('btn-update-install').disabled = true;
+  $('btn-update-install').textContent = 'Downloading…';
+  $('update-progress-wrap').classList.remove('hidden');
+  $('update-progress-fill').style.width = '2%';
+  try {
+    await window.frameforge.installUpdate({
+      downloadUrl: latestUpdateInfo.downloadUrl,
+      latestVersion: latestUpdateInfo.latestVersion,
+      isPortable: latestUpdateInfo.isPortable,
+    });
+    $('update-progress-text').textContent = 'Launching installer…';
+  } catch (err) {
+    showToast(`Update failed: ${err.message}`);
+    $('btn-update-install').disabled = false;
+    $('btn-update-install').textContent = 'Retry Download';
+  }
+};
+
 // Boot sequence
+initUpdater();
 initSupport();
 initTweaks();
 loadAudit();

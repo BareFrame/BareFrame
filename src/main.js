@@ -7,8 +7,10 @@ const { getTweakList, applyTweaks, revertTweaks, BACKUP_ROOT } = require('./engi
 const { getValorantTelemetry } = require('./engine/telemetry');
 const { runThrottleTest, getBiosGuide, rebootToBios } = require('./engine/throttle');
 const { scanBackgroundHogs, purgeBackgroundHogs, launchValorant } = require('./engine/boost');
+const { checkForUpdate, downloadUpdate } = require('./engine/updater');
 const { runPS } = require('./engine/ps');
 const supportConfig = require('./config/support');
+const { spawn } = require('child_process');
 
 let mainWindow = null;
 
@@ -126,4 +128,28 @@ ipcMain.handle('external:open', async (_evt, url) => {
     return true;
   }
   return false;
+});
+
+ipcMain.handle('app:version', () => app.getVersion());
+
+ipcMain.handle('updater:check', async () => {
+  return checkForUpdate(app.getVersion());
+});
+
+ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isPortable }) => {
+  if (!downloadUrl || !/^https:\/\/github\.com\//i.test(downloadUrl)) {
+    throw new Error('Invalid update download URL');
+  }
+  const { path: exePath } = await downloadUpdate(
+    downloadUrl,
+    latestVersion,
+    isPortable,
+    app.getVersion(),
+    (prog) => mainWindow?.webContents.send('updater:progress', prog)
+  );
+  // Launch the new installer/portable detached, then exit current app cleanly
+  const child = spawn(exePath, [], { detached: true, stdio: 'ignore' });
+  child.unref();
+  setTimeout(() => app.quit(), 600);
+  return { launched: true, exePath };
 });
