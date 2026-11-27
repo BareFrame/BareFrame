@@ -173,26 +173,41 @@ ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isP
 
   let psHandoff;
   if (isPortable) {
-    // Wait for old portable process to exit, replace portable exe in-place if possible, then relaunch
+    // Wait until all BareFrame processes have exited, replace portable exe in-place, then relaunch
     psHandoff = `
-      Start-Sleep -Seconds 2
+      for ($i = 0; $i -lt 25; $i++) {
+        if (-not (Get-Process -Name 'BareFrame' -ErrorAction SilentlyContinue)) { break }
+        Start-Sleep -Milliseconds 300
+      }
+      Stop-Process -Name 'BareFrame' -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Milliseconds 500
       $src = '${esc(downloadedExe)}'
       $dst = '${esc(currentExe)}'
       try {
         Copy-Item -Path $src -Destination $dst -Force -ErrorAction Stop
+        Remove-Item -Path $src -Force -ErrorAction SilentlyContinue
         Start-Process -FilePath $dst
       } catch {
         Start-Process -FilePath $src
       }
     `;
   } else {
-    // Wait for BareFrame to exit, run silent NSIS update (/S), then automatically relaunch BareFrame
+    // Wait until all BareFrame processes have fully exited, run silent NSIS update (/S /currentuser), cleanup, and relaunch!
+    const installDir = path.dirname(currentExe);
     psHandoff = `
-      Start-Sleep -Seconds 2
-      Start-Process -FilePath '${esc(downloadedExe)}' -ArgumentList '/S' -Wait
+      for ($i = 0; $i -lt 25; $i++) {
+        if (-not (Get-Process -Name 'BareFrame' -ErrorAction SilentlyContinue)) { break }
+        Start-Sleep -Milliseconds 300
+      }
+      Stop-Process -Name 'BareFrame' -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Milliseconds 600
+      $installer = '${esc(downloadedExe)}'
+      Unblock-File -Path $installer -ErrorAction SilentlyContinue
+      $p = Start-Process -FilePath $installer -ArgumentList '/S /currentuser /D=${esc(installDir)}' -Wait -PassThru
+      Remove-Item -Path $installer -Force -ErrorAction SilentlyContinue
       $relaunch = '${esc(currentExe)}'
       if (-not (Test-Path $relaunch)) {
-        $relaunch = Join-Path $env:LOCALAPPDATA 'Programs\\bareframe\\BareFrame.exe'
+        $relaunch = Join-Path $env:LOCALAPPDATA 'Programs\\BareFrame\\BareFrame.exe'
       }
       if (Test-Path $relaunch) {
         Start-Process -FilePath $relaunch
@@ -208,6 +223,6 @@ ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isP
   );
   child.unref();
 
-  setTimeout(() => app.quit(), 650);
+  setTimeout(() => app.exit(0), 400);
   return { launched: true, exePath: downloadedExe };
 });
