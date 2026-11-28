@@ -231,7 +231,7 @@ const TWEAKS_DATA = [
 ];
 
 /* --------------------------------------------------------------------------
-   2. Top Bar Scroll Awareness
+   2. Top Bar Scroll Awareness + Spring-Gliding Nav Hover Pill
    -------------------------------------------------------------------------- */
 const topbar = document.getElementById('topbar');
 function syncTopbar() {
@@ -239,6 +239,45 @@ function syncTopbar() {
 }
 window.addEventListener('scroll', syncTopbar, { passive: true });
 syncTopbar();
+
+const primaryNav = document.getElementById('primary-nav');
+const navHoverPill = document.getElementById('nav-hover-pill');
+const navLinks = [...primaryNav.querySelectorAll('.nav-link')];
+const navPillX = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.24,
+  onUpdate: (x) => {
+    navHoverPill.style.transform = `translate3d(${x.toFixed(2)}px, -50%, 0)`;
+  },
+});
+const navPillW = new Spring1D(64, {
+  damping: 1.0,
+  response: 0.24,
+  onUpdate: (w) => {
+    navHoverPill.style.width = `${w.toFixed(2)}px`;
+  },
+});
+
+let navPillVisible = false;
+navLinks.forEach((link) => {
+  link.addEventListener('pointerenter', () => {
+    const x = link.offsetLeft;
+    const w = link.offsetWidth;
+    if (!navPillVisible) {
+      navPillX.setImmediate(x);
+      navPillW.setImmediate(w);
+      navPillVisible = true;
+    } else {
+      navPillX.animateTo(x);
+      navPillW.animateTo(w);
+    }
+    navHoverPill.style.opacity = '1';
+  });
+});
+primaryNav.addEventListener('pointerleave', () => {
+  navHoverPill.style.opacity = '0';
+  navPillVisible = false;
+});
 
 /* --------------------------------------------------------------------------
    3. Signature Interactive Frametime Oscilloscope (Real Match Numbers)
@@ -284,10 +323,23 @@ function positionTraceThumb(btn, immediate = false) {
   else traceThumbX.animateTo(x);
 }
 
+let vbsBlend = 1;
+const vbsBlendSpring = new Spring1D(1, {
+  damping: 1.0,
+  response: 0.34,
+  onUpdate: (v) => {
+    vbsBlend = Math.max(0, Math.min(1, v));
+    updateTraceReadouts();
+    if (prefersReducedMotion()) drawTraceFrame(0);
+  },
+});
+
 function getTunedTargets() {
-  return vbsChk.checked
-    ? { fps: 298, dips: 5.2, lat: 4.68 }
-    : { fps: 274, dips: 12.8, lat: 4.92 };
+  return {
+    fps: 274 + (298 - 274) * vbsBlend,
+    dips: 12.8 + (5.2 - 12.8) * vbsBlend,
+    lat: 4.92 + (4.68 - 4.92) * vbsBlend,
+  };
 }
 
 function updateTraceReadouts() {
@@ -317,8 +369,20 @@ traceButtons.forEach((b) => {
   b.addEventListener('pointerdown', () => selectTraceMode(b.dataset.mode));
   b.addEventListener('click', () => selectTraceMode(b.dataset.mode));
 });
-vbsChk.addEventListener('change', updateTraceReadouts);
+vbsChk.addEventListener('change', () => vbsBlendSpring.animateTo(vbsChk.checked ? 1 : 0));
 requestAnimationFrame(() => selectTraceMode('tuned', true));
+
+// Interactive pointer crosshair inside frametime trace
+let hoverNormX = null;
+canvas.addEventListener('pointermove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  hoverNormX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (prefersReducedMotion()) drawTraceFrame(0);
+});
+canvas.addEventListener('pointerleave', () => {
+  hoverNormX = null;
+  if (prefersReducedMotion()) drawTraceFrame(0);
+});
 
 // Deterministic synthetic waveform representing real TDM frametimes (2ms..10ms scale)
 const SAMPLES = 120;
@@ -333,9 +397,9 @@ function sampleStockMs(idx, phase) {
 
 function sampleTunedMs(idx, phase) {
   const t = idx * 0.34 + phase;
-  const vbsAdj = vbsChk.checked ? 0 : 0.32;
+  const vbsAdj = (1 - vbsBlend) * 0.32;
   const base = 3.35 + vbsAdj + Math.sin(t * 0.65) * 0.18 + Math.cos(t * 1.7) * 0.1;
-  const mildBump = Math.pow(Math.max(0, Math.sin(t * 0.47 + 0.8)), 16) * (vbsChk.checked ? 0.8 : 1.45);
+  const mildBump = Math.pow(Math.max(0, Math.sin(t * 0.47 + 0.8)), 16) * (0.8 + (1 - vbsBlend) * 0.65);
   return base + mildBump;
 }
 
@@ -397,6 +461,8 @@ function drawTraceFrame(phase) {
   const b = Math.round(75 + (255 - 75) * blendVal);
   const lineColor = `rgb(${r}, ${g}, ${b})`;
 
+  let lastX = 0;
+  let lastY = 0;
   ctx.beginPath();
   for (let i = 0; i < SAMPLES; i++) {
     const x = (i / (SAMPLES - 1)) * w;
@@ -404,6 +470,8 @@ function drawTraceFrame(phase) {
     const y = msToY(ms);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
+    lastX = x;
+    lastY = y;
   }
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2.4;
@@ -419,6 +487,51 @@ function drawTraceFrame(phase) {
   grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
   ctx.fillStyle = grad;
   ctx.fill();
+
+  // Leading-edge oscilloscope bead
+  ctx.beginPath();
+  ctx.arc(lastX - 2, lastY, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Interactive hover crosshair & floating frametime readout
+  if (hoverNormX !== null) {
+    const idx = hoverNormX * (SAMPLES - 1);
+    const ms = sampleStockMs(idx, phase) * (1 - blendVal) + sampleTunedMs(idx, phase) * blendVal;
+    const hx = hoverNormX * w;
+    const hy = msToY(ms);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244, 246, 250, 0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(hx, 0);
+    ctx.lineTo(hx, h);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+
+    const label = `${ms.toFixed(2)} ms (${Math.round(1000 / ms)} FPS)`;
+    ctx.font = '500 11px "JetBrains Mono", Consolas, monospace';
+    const tw = ctx.measureText(label).width + 16;
+    const bx = Math.min(w - tw - 8, Math.max(8, hx - tw / 2));
+    const by = hy > 44 ? hy - 34 : hy + 12;
+    ctx.fillStyle = 'rgba(15, 20, 29, 0.92)';
+    ctx.strokeStyle = 'rgba(226, 234, 248, 0.18)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, tw, 24, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#f4f6fa';
+    ctx.fillText(label, bx + 8, by + 15.5);
+    ctx.restore();
+  }
 }
 
 let tracePhase = 0;
@@ -599,12 +712,21 @@ const stageSpring = new Spring1D(0.9, {
   },
 });
 
+const stageFpsSpring = new Spring1D(298, {
+  damping: 1.0,
+  response: 0.28,
+  onUpdate: (v) => {
+    sFps.innerHTML = `${Math.round(v)} <small>FPS avg</small>`;
+  },
+});
+
 const stageNorm = (i) => (i + 0.5) / STAGES.length;
 
-function applyStage(idx) {
+function applyStage(idx, immediate = false) {
   stageIdx = idx;
   const st = STAGES[idx];
-  sFps.innerHTML = `${st.fps} <small>FPS avg</small>`;
+  if (immediate) stageFpsSpring.setImmediate(st.fps);
+  else stageFpsSpring.animateTo(st.fps);
   sCap.textContent = st.cap;
   sDelta.textContent = st.delta;
   sDelta.classList.toggle('baseline', st.baseline);
@@ -613,7 +735,7 @@ function applyStage(idx) {
 }
 
 stageSpring.setImmediate(stageNorm(4));
-applyStage(4);
+applyStage(4, true);
 
 stopBtns.forEach((btn) => {
   btn.addEventListener('pointerdown', (e) => {
@@ -631,6 +753,7 @@ let history = [];
 track.addEventListener('pointerdown', (e) => {
   track.setPointerCapture(e.pointerId);
   dragging = true;
+  track.classList.add('is-dragging');
   stageSpring.stop();
   const rect = track.getBoundingClientRect();
   const kRect = knob.getBoundingClientRect();
@@ -668,6 +791,7 @@ track.addEventListener('pointermove', (e) => {
 function endDrag() {
   if (!dragging) return;
   dragging = false;
+  track.classList.remove('is-dragging');
   const rect = track.getBoundingClientRect();
   let vel = 0;
   if (history.length >= 2) {
@@ -713,7 +837,7 @@ function renderManifest() {
     .map((t) => {
       const open = openRows.has(t.id);
       return `
-        <div class="manifest-row">
+        <div class="manifest-row ${open ? 'is-open' : ''}" data-row-id="${t.id}">
           <button type="button" class="manifest-trigger" data-tweak-id="${t.id}" aria-expanded="${open}">
             <span class="m-title">${t.name}</span>
             <span class="m-cat">${t.category}</span>
@@ -721,16 +845,20 @@ function renderManifest() {
             <span class="m-kind ${t.opt ? 'opt' : ''}">${t.opt ? 'Opt-in' : 'Standard'}</span>
             <span class="m-sign" aria-hidden="true">${open ? '−' : '+'}</span>
           </button>
-          <div class="manifest-body ${open ? '' : 'hidden'}">
-            <div>
-              <h4>What it changes</h4>
-              <p>${t.desc}</p>
-              <h4>How Revert All restores it</h4>
-              <p>${t.revert}</p>
-            </div>
-            <div>
-              <h4>Exact Windows targets</h4>
-              <pre class="manifest-code mono">${t.commands}</pre>
+          <div class="manifest-collapse">
+            <div class="manifest-collapse-inner">
+              <div class="manifest-body">
+                <div>
+                  <h4>What it changes</h4>
+                  <p>${t.desc}</p>
+                  <h4>How Revert All restores it</h4>
+                  <p>${t.revert}</p>
+                </div>
+                <div>
+                  <h4>Exact Windows targets</h4>
+                  <pre class="manifest-code mono">${t.commands}</pre>
+                </div>
+              </div>
             </div>
           </div>
         </div>`;
@@ -740,9 +868,13 @@ function renderManifest() {
   manifestRowsEl.querySelectorAll('.manifest-trigger').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.tweakId;
-      if (openRows.has(id)) openRows.delete(id);
-      else openRows.add(id);
-      renderManifest();
+      const row = btn.closest('.manifest-row');
+      const willOpen = !openRows.has(id);
+      if (willOpen) openRows.add(id);
+      else openRows.delete(id);
+      row.classList.toggle('is-open', willOpen);
+      btn.setAttribute('aria-expanded', String(willOpen));
+      btn.querySelector('.m-sign').textContent = willOpen ? '−' : '+';
     });
   });
 }

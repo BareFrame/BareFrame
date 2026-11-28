@@ -470,7 +470,71 @@ body.modal-active .app-shell {
 .bottom-update-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--red), var(--blue));
+  background: linear-gradient(90deg, var(--red), var(--blue), #6cb2ff, var(--blue));
+  background-size: 220% 100%;
+  animation: barSheen 1.8s linear infinite;
+}
+
+@keyframes barSheen {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Smooth SVG chart bar growth & live throttle sample pulse */
+.chart-bar-anim {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: barRise 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes barRise {
+  from { transform: scaleY(0); opacity: 0.4; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.live-sample-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: samplePulse 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes samplePulse {
+  0% { transform: scale(1); opacity: 0.75; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.game-card-enter {
+  animation: cardStagger 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardStagger {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 22px;
+  background: rgba(26, 32, 46, 0.94);
+  backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid var(--separator-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: var(--label-primary);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 12.8px;
+  font-weight: 500;
+  z-index: 120;
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 200ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 body.has-bottom-update .content {
@@ -525,6 +589,24 @@ body.has-bottom-update .toast {
 
 .tab-panel.active {
   display: flex;
+}
+
+.tab-panel.enter-down {
+  animation: panelFromBelow 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tab-panel.enter-up {
+  animation: panelFromAbove 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes panelFromBelow {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes panelFromAbove {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Sticky Translucent Header with Scroll Edge Effect (§12) */
@@ -1103,6 +1185,31 @@ body.has-bottom-update .toast {
   flex-shrink: 0;
 }
 
+.tweak-drawer-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+.tweak-card.is-open .tweak-drawer-collapse {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.tweak-drawer-inner {
+  overflow: hidden;
+}
+
+.tweak-desc-drawer {
+  padding: 10px 16px 13px 66px;
+  font-size: 12.5px;
+  color: var(--label-secondary);
+  line-height: 1.52;
+  background: var(--bg-inset);
+  border-top: 1px solid var(--separator);
+}
+
 .expand-btn {
   width: 26px;
   height: 26px;
@@ -1115,21 +1222,12 @@ body.has-bottom-update .toast {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 120ms ease, color 120ms ease, transform 90ms ease-out;
+  transition: background-color 120ms ease, color 120ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .expand-btn:hover { background: rgba(255, 255, 255, 0.11); color: var(--label-primary); }
 .expand-btn:active { transform: scale(0.92); }
-.expand-btn.is-open { color: var(--blue-text); background: var(--blue-fill); }
-
-.tweak-desc-drawer {
-  padding: 10px 16px 13px 66px;
-  font-size: 12.5px;
-  color: var(--label-secondary);
-  line-height: 1.52;
-  background: var(--bg-inset);
-  border-top: 1px solid var(--separator);
-}
+.expand-btn.is-open { color: var(--blue-text); background: var(--blue-fill); transform: rotate(180deg); }
 
 .expand-symbol {
   font-size: 16px;
@@ -1370,23 +1468,6 @@ details[open] > summary .expand-symbol { color: var(--blue-text); }
   cursor: pointer;
 }
 .tip-optout input { accent-color: var(--blue); }
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 22px;
-  background: rgba(26, 30, 40, 0.92);
-  backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid var(--separator-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.5);
-  color: var(--label-primary);
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 12.8px;
-  font-weight: 500;
-  z-index: 120;
-  animation: materializeIn 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
 
 /* First-Boot / Switch Game Selector */
 .game-picker-overlay {

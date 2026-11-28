@@ -126,8 +126,13 @@ function showToast(msg, duration = 3500) {
   const el = $('toast');
   el.textContent = msg;
   el.classList.remove('hidden');
+  requestAnimationFrame(() => el.classList.add('is-visible'));
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.add('hidden'), duration);
+  clearTimeout(el._hideT);
+  el._t = setTimeout(() => {
+    el.classList.remove('is-visible');
+    el._hideT = setTimeout(() => el.classList.add('hidden'), 240);
+  }, duration);
 }
 
 function confirmModal(title, body) {
@@ -178,7 +183,16 @@ function moveNavPill(btn, immediate = false) {
   else navPillY.animateTo(targetY);
 }
 
+const TAB_ORDER = ['overview', 'tweaks', 'throttle', 'telemetry', 'boost'];
+let currentTabId = 'overview';
+
 function switchTab(tabId) {
+  if (tabId === currentTabId) return;
+  const prevIdx = TAB_ORDER.indexOf(currentTabId);
+  const nextIdx = TAB_ORDER.indexOf(tabId);
+  const dirClass = nextIdx >= prevIdx ? 'enter-down' : 'enter-up';
+  currentTabId = tabId;
+
   let activeBtn = null;
   document.querySelectorAll('.nav-item').forEach((b) => {
     const active = b.dataset.tab === tabId;
@@ -187,7 +201,13 @@ function switchTab(tabId) {
   });
   moveNavPill(activeBtn);
   document.querySelectorAll('.tab-panel').forEach((p) => {
-    p.classList.toggle('active', p.id === `tab-${tabId}`);
+    const isTarget = p.id === `tab-${tabId}`;
+    p.classList.remove('enter-down', 'enter-up');
+    p.classList.toggle('active', isTarget);
+    if (isTarget) {
+      void p.offsetWidth;
+      p.classList.add(dirClass);
+    }
   });
   mainContent.scrollTop = 0;
   mainContent.classList.remove('is-scrolled');
@@ -348,7 +368,11 @@ function renderTweaks() {
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
         </div>
-        <div class="tweak-desc-drawer hidden">${t.description}</div>
+        <div class="tweak-drawer-collapse">
+          <div class="tweak-drawer-inner">
+            <div class="tweak-desc-drawer">${t.description}</div>
+          </div>
+        </div>
       </div>`;
     })
     .join('');
@@ -362,8 +386,8 @@ function renderTweaks() {
 
   container.querySelectorAll('.expand-btn').forEach((btn) => {
     btn.onclick = () => {
-      const drawer = btn.closest('.tweak-card').querySelector('.tweak-desc-drawer');
-      const open = drawer.classList.toggle('hidden') === false;
+      const card = btn.closest('.tweak-card');
+      const open = card.classList.toggle('is-open');
       btn.textContent = open ? '−' : '+';
       btn.setAttribute('aria-expanded', String(open));
       btn.classList.toggle('is-open', open);
@@ -561,7 +585,7 @@ async function loadBiosGuide(vendor, model) {
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
 
-function renderThrottleChart(samples) {
+function renderThrottleChart(samples, isLive = false) {
   const wrap = $('throttle-chart-wrap');
   if (!samples.length) return;
   const W = 540, H = 195, padL = 48, padR = 16, padT = 18, padB = 28;
@@ -573,6 +597,7 @@ function renderThrottleChart(samples) {
 
   const pts = samples.map((s) => `${xOf(s.sec).toFixed(1)},${yOf(s.avgMHz).toFixed(1)}`).join(' ');
   const gridVals = [maxVal, Math.round((maxVal + minVal) / 2), minVal];
+  const lastSample = samples[samples.length - 1];
 
   wrap.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="195">
@@ -580,16 +605,17 @@ function renderThrottleChart(samples) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#6B788E" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
-      <polyline fill="none" stroke="#0A84FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
+      <polyline fill="none" stroke="#2B7FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
+      ${isLive && lastSample ? `<circle class="live-sample-ring" cx="${xOf(lastSample.sec)}" cy="${yOf(lastSample.avgMHz)}" r="5" fill="none" stroke="#E5324B" stroke-width="1.5"/>` : ''}
       ${samples
         .map(
           (s) => `
-        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#FF375F" stroke="#0D0F14" stroke-width="1.5"/>
-        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F5F7FA" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
-        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
+        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#E5324B" stroke="#0F141D" stroke-width="1.5"/>
+        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F4F6FA" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
+        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6B788E" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
         )
         .join('')}
     </svg>`;
@@ -597,7 +623,7 @@ function renderThrottleChart(samples) {
 
 window.frameforge.onThrottleSample((sample) => {
   state.throttleSamples.push(sample);
-  renderThrottleChart(state.throttleSamples);
+  renderThrottleChart(state.throttleSamples, true);
   $('throttle-summary').textContent = `Sampling T+${sample.sec}s / 34s · Active P-Core Avg: ${sample.avgMHz} MHz (Peak: ${sample.peakMHz} MHz)`;
 });
 
@@ -717,11 +743,11 @@ function renderTelemetry(data) {
           const h = H - padB - top;
           const isLast = i === sessions.length - 1;
           return `
-            <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
-                  fill="${isLast ? '#0A84FF' : 'rgba(255,55,95,0.72)'}" />
-            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#5AC8FA' : '#F5F7FA'}" font-family="Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
-            <text x="${cx}" y="${H - 15}" fill="#6D7689" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
-            <text x="${cx}" y="${H - 3}" fill="#9CA5B7" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
+            <rect class="chart-bar-anim" style="animation-delay:${i * 35}ms" x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
+                  fill="${isLast ? '#2B7FFF' : 'rgba(229,50,75,0.72)'}" />
+            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#6CB2FF' : '#F4F6FA'}" font-family="Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
+            <text x="${cx}" y="${H - 15}" fill="#6B788E" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
+            <text x="${cx}" y="${H - 3}" fill="#96A3B8" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
         })
         .join('')}
     </svg>`;
@@ -1021,14 +1047,14 @@ function applyGameUi() {
   }
 }
 
-function renderGamePickerCards() {
+function renderGamePickerCards(animateStagger = false) {
   const grid = $('game-picker-grid');
   grid.innerHTML = state.games
-    .map((g) => {
+    .map((g, idx) => {
       const selected = state.pendingGameId === g.id;
       const installed = Boolean(state.installedGames[g.id]) && g.id !== 'all';
       return `
-      <button type="button" class="game-card ${selected ? 'selected' : ''}" data-game-id="${g.id}">
+      <button type="button" class="game-card ${selected ? 'selected' : ''} ${animateStagger ? 'game-card-enter' : ''}" style="${animateStagger ? `animation-delay:${idx * 28}ms` : ''}" data-game-id="${g.id}">
         <div class="game-card-top">
           <div>
             <div class="game-card-name">${g.name}</div>
@@ -1056,8 +1082,8 @@ function renderGamePickerCards() {
   });
 }
 
-function updateGamePickerSelection() {
-  renderGamePickerCards();
+function updateGamePickerSelection(animateStagger = false) {
+  renderGamePickerCards(animateStagger);
   const confirmBtn = $('btn-game-picker-confirm');
   const note = $('game-picker-selected-note');
   const chosen = state.games.find((g) => g.id === state.pendingGameId);
@@ -1080,7 +1106,7 @@ function openGamePicker(isFirstBoot = false) {
   } else if (!isFirstBoot) {
     state.pendingGameId = state.gameId;
   }
-  updateGamePickerSelection();
+  updateGamePickerSelection(true);
   $('game-picker-overlay').classList.remove('hidden');
   syncModalDim();
 }
