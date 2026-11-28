@@ -215,7 +215,7 @@ const scoreSpring = new Spring1D(0, {
     scoreEl.textContent = String(rounded);
     scoreEl.className = `score-num ${rounded >= 80 ? 'is-good' : rounded < 55 ? 'is-low' : ''}`.trim();
     barFill.style.width = `${clamped.toFixed(1)}%`;
-    barFill.style.background = rounded >= 80 ? '#0A84FF' : rounded >= 55 ? '#5AC8FA' : '#FF375F';
+    barFill.style.background = rounded >= 80 ? '#2B7FFF' : rounded >= 55 ? '#6CB2FF' : '#E5324B';
   },
 });
 
@@ -250,12 +250,12 @@ async function loadAudit() {
 function renderAudit(d) {
   const badge = $('admin-badge');
   if (d.isAdmin) {
-    badge.textContent = 'Admin Active';
+    badge.textContent = 'Admin ready';
     badge.className = 'admin-badge is-admin';
     badge.style.cursor = 'default';
     badge.onclick = null;
   } else {
-    badge.textContent = 'Standard · Elevate';
+    badge.textContent = 'Standard mode';
     badge.className = 'admin-badge no-admin';
     badge.style.cursor = 'pointer';
     badge.title = 'Relaunch with Administrator privileges to apply system tweaks';
@@ -265,7 +265,7 @@ function renderAudit(d) {
   scoreSpring.animateTo(d.score);
 
   $('score-verdict').textContent =
-    d.score >= 90 ? 'Tuned' : d.score >= 70 ? 'Mostly Tuned' : d.score >= 45 ? 'Bottlenecks Found' : 'Stock Overhead';
+    d.score >= 90 ? 'Tuned' : d.score >= 70 ? 'Mostly tuned' : d.score >= 45 ? 'Bottlenecks found' : 'Stock overhead';
   const doneCount = Object.values(d.status).filter(Boolean).length;
   const totalCount = Object.keys(d.status).length;
   $('score-sub').textContent = `${doneCount} of ${totalCount} subsystems tuned`;
@@ -274,28 +274,29 @@ function renderAudit(d) {
   // Hardware
   const h = d.hardware;
   $('hw-cpu').textContent = `${h.cpuName} (${h.cpuCores}C/${h.cpuThreads}T)`;
-  $('hw-gpu').textContent = `${h.gpuName}${h.gpuTempC != null ? ` · ${h.gpuTempC}°C` : ''}`;
-  $('hw-ram').textContent = `${h.ramTotalGB} GB (${h.ramSticks}× stick @ ${h.ramSpeedMHz} MHz · ${h.ramFreeGB} GB free)`;
+  $('hw-gpu').textContent = `${h.gpuName}${h.gpuTempC != null ? `, ${h.gpuTempC}°C` : ''}`;
+  $('hw-ram').textContent = `${h.ramTotalGB} GB (${h.ramSticks}× ${h.ramSpeedMHz} MHz, ${h.ramFreeGB} GB free)`;
   $('hw-board').textContent = `${h.boardVendor} ${h.boardModel} (BIOS ${h.biosVersion})`;
-  $('hw-disp').textContent = `${h.resolution} @ ${h.refreshRate}Hz · ReBAR ${h.rebarMB >= 4096 ? `${Math.round(h.rebarMB / 1024)} GB ON` : 'Check BIOS'}`;
-  $('hw-sys').textContent = `${h.activePowerPlan} · ${h.nicName} · VBS ${d.details.vbsStatus === 0 ? 'OFF (Bare Metal)' : 'ON'}`;
+  $('hw-disp').textContent = `${h.resolution} at ${h.refreshRate} Hz, ReBAR ${h.rebarMB >= 4096 ? `${Math.round(h.rebarMB / 1024)} GB on` : 'check BIOS'}`;
+  $('hw-sys').textContent = `${h.activePowerPlan}, ${h.nicName}, VBS ${d.details.vbsStatus === 0 ? 'off (Bare-Metal)' : 'on'}`;
 
   // Bottlenecks
   const list = $('bottlenecks-list');
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
     const g = getActiveGame();
-    countPill.textContent = 'All Clear';
+    countPill.textContent = 'All clear';
     countPill.className = 'pill-blue';
-    list.innerHTML = `<div class="empty-state" style="color:#5AC8FA;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
+    list.innerHTML = `<div class="empty-state" style="color:#6CB2FF;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
   } else {
-    countPill.textContent = `${d.bottlenecks.length} Found`;
+    countPill.textContent = `${d.bottlenecks.length} found`;
     countPill.className = 'pill-red';
+    const sevLabel = { HIGH: 'High', MED: 'Medium', LOW: 'Low' };
     list.innerHTML = d.bottlenecks
       .map(
         (b) => `
       <div class="bottleneck-item">
-        <span class="${b.severity === 'HIGH' ? 'pill-red' : b.severity === 'MED' ? 'pill-opt' : 'pill-blue'}">${b.severity}</span>
+        <span class="${b.severity === 'HIGH' ? 'pill-red' : b.severity === 'MED' ? 'pill-opt' : 'pill-blue'}">${sevLabel[b.severity] || b.severity}</span>
         <div>
           <div class="bottleneck-title">${b.title}</div>
           <div class="bottleneck-detail">${b.detail}</div>
@@ -323,6 +324,7 @@ function renderTweaks() {
   if (!state.tweaks.length) return;
   const statusMap = state.audit?.status || {};
 
+  const impactLabel = { 'VERY HIGH': 'Very high', HIGH: 'High', MED: 'Medium', LOW: 'Low' };
   container.innerHTML = state.tweaks
     .map((t) => {
       const done = Boolean(statusMap[t.id]);
@@ -339,8 +341,8 @@ function renderTweaks() {
             <span class="tweak-name">${t.name}</span>
           </label>
           <div class="tweak-badges">
-            <span class="${impactCls}">${t.impact}</span>
-            ${t.optIn ? '<span class="pill-opt">Opt-In</span>' : ''}
+            <span class="${impactCls}">${impactLabel[t.impact] || t.impact}</span>
+            ${t.optIn ? '<span class="pill-opt">Opt-in</span>' : ''}
             ${t.requiresReboot ? '<span class="pill-neutral">Reboot</span>' : ''}
             <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Stock'}</span>
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
@@ -870,9 +872,9 @@ function showBottomUpdateBar(info) {
   $('bottom-update-title').textContent = `BareFrame v${info.latestVersion} is ready`;
   $('bottom-update-meta').textContent =
     info.sizeMB > 0
-      ? `v${info.currentVersion} → v${info.latestVersion} · ${info.sizeMB} MB (${info.assetName})`
-      : `v${info.currentVersion} → v${info.latestVersion}`;
-  $('btn-bottom-install-update').textContent = 'Install Update';
+      ? `${info.sizeMB} MB (${info.assetName})`
+      : info.assetName || '';
+  $('btn-bottom-install-update').textContent = 'Install update';
   $('btn-bottom-install-update').disabled = false;
   $('btn-bottom-update-dismiss').classList.remove('hidden');
   $('bottom-update-prog').classList.add('hidden');
@@ -995,9 +997,9 @@ $('btn-update-install').onclick = triggerInstallUpdate;
 function applyGameUi() {
   const g = getActiveGame();
   $('sidebar-game-name').textContent = g.shortName;
-  $('overview-title').textContent = g.id === 'all' ? 'Overview' : `Overview · ${g.name}`;
+  $('overview-title').textContent = g.id === 'all' ? 'Overview' : g.name;
   $('overview-subtitle').textContent =
-    `${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Optimizations`;
+    `${g.antiCheat} safe, automatic Restore Point, and 12 tailored optimizations with one-click rollback`;
   $('hero-cta-desc').textContent =
     `Tailored for ${g.name}. Creates a System Restore Point and backups first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
   $('hero-vbs-sub').textContent = g.vbsNote;
@@ -1030,7 +1032,7 @@ function renderGamePickerCards() {
         <div class="game-card-top">
           <div>
             <div class="game-card-name">${g.name}</div>
-            <div class="game-card-meta">${g.engine} · ${g.antiCheat}</div>
+            <div class="game-card-meta">${g.engine.replace(/\s*·\s*/g, ', ')}, ${g.antiCheat.replace(/\s*·\s*/g, ', ')}</div>
           </div>
           <div class="game-card-badges">
             ${installed ? '<span class="game-installed-tag">Installed</span>' : ''}
@@ -1062,7 +1064,7 @@ function updateGamePickerSelection() {
   if (chosen) {
     confirmBtn.disabled = false;
     confirmBtn.textContent = `Continue with ${chosen.shortName}`;
-    note.textContent = `${chosen.name} · 12 tailored optimizations ready`;
+    note.textContent = `${chosen.name} selected (12 tailored optimizations ready)`;
   } else {
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Continue';

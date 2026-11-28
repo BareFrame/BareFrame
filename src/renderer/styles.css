@@ -10,32 +10,32 @@
    ========================================================================== */
 
 :root {
-  --bg-window: #0d0f14;
-  --bg-sidebar: rgba(17, 20, 27, 0.86);
-  --bg-titlebar: rgba(13, 15, 20, 0.88);
-  --bg-surface: #151821;
-  --bg-surface-hover: #1b1f2b;
-  --bg-elevated: #1e2330;
-  --bg-inset: #10131a;
+  --bg-window: #0f141d;
+  --bg-sidebar: rgba(19, 25, 36, 0.88);
+  --bg-titlebar: rgba(15, 20, 29, 0.9);
+  --bg-surface: #161d29;
+  --bg-surface-hover: #1c2535;
+  --bg-elevated: #1e2738;
+  --bg-inset: #0c1018;
 
-  --separator: rgba(255, 255, 255, 0.075);
-  --separator-strong: rgba(255, 255, 255, 0.13);
-  --specular: rgba(255, 255, 255, 0.065);
+  --separator: rgba(226, 234, 248, 0.085);
+  --separator-strong: rgba(226, 234, 248, 0.15);
+  --specular: rgba(255, 255, 255, 0.06);
 
-  --label-primary: #f5f7fa;
-  --label-secondary: #9ca5b7;
-  --label-tertiary: #6d7689;
+  --label-primary: #f4f6fa;
+  --label-secondary: #96a3b8;
+  --label-tertiary: #6b788e;
 
-  --blue: #0a84ff;
-  --blue-hover: #2994ff;
-  --blue-text: #5ac8fa;
-  --blue-fill: rgba(10, 132, 255, 0.16);
-  --blue-border: rgba(10, 132, 255, 0.36);
+  --blue: #2b7fff;
+  --blue-hover: #4590ff;
+  --blue-text: #6cb2ff;
+  --blue-fill: rgba(43, 127, 255, 0.16);
+  --blue-border: rgba(108, 178, 255, 0.36);
 
-  --red: #ff375f;
-  --red-hover: #ff4f72;
-  --red-fill: rgba(255, 55, 95, 0.14);
-  --red-border: rgba(255, 55, 95, 0.34);
+  --red: #e5324b;
+  --red-hover: #f2435b;
+  --red-fill: rgba(229, 50, 75, 0.15);
+  --red-border: rgba(229, 50, 75, 0.36);
 
   --r-card: 14px;
   --r-control: 9px;
@@ -43,6 +43,11 @@
 
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 *, *::before, *::after {
@@ -274,9 +279,8 @@ body.modal-active .app-shell {
 }
 
 .game-switcher-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--label-tertiary);
 }
 
@@ -536,14 +540,14 @@ body.has-bottom-update .toast {
   margin: 0 -28px;
   padding-left: 28px;
   padding-right: 28px;
-  background: linear-gradient(180deg, rgba(13, 15, 20, 0.94) 68%, rgba(13, 15, 20, 0));
+  background: linear-gradient(180deg, rgba(15, 20, 29, 0.94) 68%, rgba(15, 20, 29, 0));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transition: border-color 180ms ease;
 }
 
 .content.is-scrolled .panel-header {
-  background: rgba(13, 15, 20, 0.84);
+  background: rgba(15, 20, 29, 0.88);
   border-bottom: 1px solid var(--separator);
 }
 
