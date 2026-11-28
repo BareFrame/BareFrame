@@ -140,6 +140,15 @@ code {
   border-radius: 6px;
 }
 
+.beta-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--cobalt-light);
+  padding: 0.16rem 0.52rem;
+  border-radius: 6px;
+  background: var(--cobalt-soft);
+}
+
 .version-label {
   font-family: var(--mono);
   font-size: 0.76rem;
@@ -311,6 +320,14 @@ code {
   grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr);
   gap: clamp(2.2rem, 4.5vw, 4.5rem);
   align-items: center;
+}
+
+.hero-beta-note {
+  display: inline-block;
+  margin-bottom: 0.9rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--cobalt-light);
 }
 
 .hero-title {

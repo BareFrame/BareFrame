@@ -913,11 +913,16 @@ function hideBottomUpdateBar() {
   document.body.classList.remove('has-bottom-update');
 }
 
+let currentAppVersion = '0.1.0';
+
 async function initUpdater() {
   try {
     const ver = await window.frameforge.getAppVersion();
+    currentAppVersion = ver;
     const pill = $('app-version-pill');
     if (pill) pill.textContent = `v${ver}`;
+    const betaPill = $('app-beta-pill');
+    if (betaPill) betaPill.classList.toggle('hidden', !String(ver).startsWith('0.'));
   } catch {}
   runUpdateCheck();
   setInterval(() => runUpdateCheck(), 30 * 60 * 1000);
@@ -1099,7 +1104,10 @@ function updateGamePickerSelection(animateStagger = false) {
 }
 
 function openGamePicker(isFirstBoot = false) {
-  $('game-picker-kicker').textContent = isFirstBoot ? 'Welcome to BareFrame' : 'Switch Game Profile';
+  const isBeta = String(currentAppVersion).startsWith('0.');
+  $('game-picker-kicker').textContent = isFirstBoot
+    ? (isBeta ? `BareFrame Beta (v${currentAppVersion})` : `BareFrame v${currentAppVersion}`)
+    : 'Switch game profile';
   $('btn-game-picker-cancel').classList.toggle('hidden', isFirstBoot);
   if (!state.pendingGameId) {
     state.pendingGameId = state.gameId || Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
