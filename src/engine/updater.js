@@ -56,34 +56,41 @@ function httpsGetJson(url, userAgent) {
   });
 }
 
-function downloadFileWithProgress(url, destPath, userAgent, onProgress, redirectsLeft = 5) {
+function downloadFileWithProgress(url, destPath, userAgent, onProgress, expectedBytes = 0, redirectsLeft = 5) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, { headers: { 'User-Agent': userAgent }, timeout: 30000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
-        return resolve(downloadFileWithProgress(res.headers.location, destPath, userAgent, onProgress, redirectsLeft - 1));
+        return resolve(downloadFileWithProgress(res.headers.location, destPath, userAgent, onProgress, expectedBytes, redirectsLeft - 1));
       }
       if (res.statusCode !== 200) {
         res.resume();
         return reject(new Error(`Download failed: HTTP ${res.statusCode}`));
       }
 
-      const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+      const headerBytes = parseInt(res.headers['content-length'] || '0', 10);
+      const totalBytes = headerBytes > 0 ? headerBytes : (expectedBytes || 0);
       let received = 0;
       let lastEmit = 0;
+      const startedAt = Date.now();
       const file = fs.createWriteStream(destPath);
 
       res.on('data', (chunk) => {
         received += chunk.length;
         const now = Date.now();
-        if (onProgress && (now - lastEmit > 120 || received === totalBytes)) {
+        if (onProgress && (now - lastEmit > 100 || (totalBytes > 0 && received >= totalBytes))) {
           lastEmit = now;
+          const elapsedSec = Math.max(0.15, (now - startedAt) / 1000);
+          const speedMBps = Number(((received / 1048576) / elapsedSec).toFixed(1));
           const pct = totalBytes > 0 ? Math.min(100, Math.round((received / totalBytes) * 100)) : 0;
           onProgress({
             pct,
+            receivedBytes: received,
+            totalBytes,
             receivedMB: Number((received / 1048576).toFixed(1)),
             totalMB: Number((totalBytes / 1048576).toFixed(1)),
+            speedMBps,
           });
         }
       });
@@ -140,16 +147,17 @@ async function checkForUpdate(currentVersion) {
     releaseUrl: release.html_url || `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest`,
     downloadUrl: asset ? asset.browser_download_url : null,
     assetName: asset ? asset.name : preferredName,
+    sizeBytes: asset ? asset.size : 0,
     sizeMB: asset ? Number((asset.size / 1048576).toFixed(1)) : 0,
     notes: (release.body || '').trim().slice(0, 600),
   };
 }
 
-async function downloadUpdate(downloadUrl, latestVersion, isPortable, currentVersion, onProgress) {
+async function downloadUpdate(downloadUrl, latestVersion, isPortable, currentVersion, onProgress, expectedBytes = 0) {
   const safeVer = String(latestVersion || 'latest').replace(/[^0-9A-Za-z._-]/g, '');
   const fileName = isPortable ? `BareFrame-Portable-${safeVer}.exe` : `BareFrame-Setup-${safeVer}.exe`;
   const destPath = path.join(os.tmpdir(), fileName);
-  return downloadFileWithProgress(downloadUrl, destPath, `BareFrame/${currentVersion}`, onProgress);
+  return downloadFileWithProgress(downloadUrl, destPath, `BareFrame/${currentVersion}`, onProgress, expectedBytes);
 }
 
 module.exports = { checkForUpdate, downloadUpdate, isNewerVersion };

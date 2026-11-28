@@ -164,7 +164,7 @@ ipcMain.handle('updater:check', async () => {
   return checkForUpdate(app.getVersion());
 });
 
-ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isPortable }) => {
+ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isPortable, sizeBytes }) => {
   if (!downloadUrl || !/^https:\/\/github\.com\//i.test(downloadUrl)) {
     throw new Error('Invalid update download URL');
   }
@@ -173,7 +173,8 @@ ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isP
     latestVersion,
     isPortable,
     app.getVersion(),
-    (prog) => mainWindow?.webContents.send('updater:progress', { ...prog, status: 'Downloading…' })
+    (prog) => mainWindow?.webContents.send('updater:progress', { ...prog, status: 'Downloading…' }),
+    sizeBytes || 0
   );
 
   mainWindow?.webContents.send('updater:progress', {

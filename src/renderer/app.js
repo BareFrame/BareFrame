@@ -852,8 +852,38 @@ $('btn-tip-banner').onclick = () =>
   );
 $('btn-tip-close').onclick = closeTipModal;
 
-// ---------------- AUTOMATIC UPDATER (Launch + 30-Min Silent Check) ----------------
+// ---------------- AUTOMATIC UPDATER (Launch + Bottom Bar + Real Byte Progress) ----------------
 let latestUpdateInfo = null;
+
+const updateBarSpring = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.24,
+  onUpdate: (v) => {
+    const c = Math.max(0, Math.min(100, v));
+    const pctStr = `${c.toFixed(1)}%`;
+    $('bottom-update-fill').style.width = pctStr;
+    $('update-progress-fill').style.width = pctStr;
+  },
+});
+
+function showBottomUpdateBar(info) {
+  $('bottom-update-title').textContent = `BareFrame v${info.latestVersion} is ready`;
+  $('bottom-update-meta').textContent =
+    info.sizeMB > 0
+      ? `v${info.currentVersion} → v${info.latestVersion} · ${info.sizeMB} MB (${info.assetName})`
+      : `v${info.currentVersion} → v${info.latestVersion}`;
+  $('btn-bottom-install-update').textContent = 'Install Update';
+  $('btn-bottom-install-update').disabled = false;
+  $('btn-bottom-update-dismiss').classList.remove('hidden');
+  $('bottom-update-prog').classList.add('hidden');
+  $('bottom-update-bar').classList.remove('hidden');
+  document.body.classList.add('has-bottom-update');
+}
+
+function hideBottomUpdateBar() {
+  $('bottom-update-bar').classList.add('hidden');
+  document.body.classList.remove('has-bottom-update');
+}
 
 async function initUpdater() {
   try {
@@ -873,13 +903,7 @@ async function runUpdateCheck() {
       const upPill = $('btn-update-pill');
       upPill.textContent = `Update v${info.latestVersion}`;
       upPill.classList.remove('hidden');
-
-      const sideCard = $('sidebar-update-card');
-      $('sidebar-update-ver').textContent = `Update v${info.latestVersion} Ready`;
-      $('btn-sidebar-install-update').textContent = 'Install Update';
-      $('btn-sidebar-install-update').disabled = false;
-      $('sidebar-update-prog').classList.add('hidden');
-      sideCard.classList.remove('hidden');
+      showBottomUpdateBar(info);
     }
   } catch {
     // Silent background update check
@@ -888,7 +912,7 @@ async function runUpdateCheck() {
 
 function openUpdateModal(info) {
   $('update-modal-title').textContent = `Update to BareFrame v${info.latestVersion}`;
-  $('update-modal-body').textContent = `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). Downloads from GitHub Releases, installs silently, and relaunches automatically.`;
+  $('update-modal-body').textContent = `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB full Electron installer). Downloads from GitHub Releases, installs silently, and relaunches automatically.`;
   $('update-progress-wrap').classList.add('hidden');
   $('btn-update-install').disabled = false;
   $('btn-update-install').textContent = 'Download & Install';
@@ -897,55 +921,70 @@ function openUpdateModal(info) {
 }
 
 window.frameforge.onUpdateProgress((p) => {
-  const statusTxt = p.status || `Downloading… ${p.receivedMB} / ${p.totalMB} MB`;
-  const modalTxt = p.receivedMB > 0 && p.pct < 100 ? `Downloading… ${p.receivedMB} / ${p.totalMB} MB` : statusTxt;
-  const sideTxt = p.pct >= 100 ? 'Installing & restarting…' : `${p.receivedMB}/${p.totalMB} MB`;
+  const speedPart = p.speedMBps > 0 && p.pct < 100 ? ` · ${p.speedMBps} MB/s` : '';
+  const sizePart = p.totalMB > 0 ? `${p.receivedMB} / ${p.totalMB} MB` : `${p.receivedMB} MB`;
+  const liveTxt =
+    p.pct >= 100
+      ? p.status || 'Installing & restarting BareFrame…'
+      : `Downloading ${sizePart}${speedPart}`;
 
-  $('update-progress-fill').style.width = `${p.pct}%`;
+  updateBarSpring.animateTo(p.pct);
   $('update-progress-pct').textContent = `${p.pct}%`;
-  $('update-progress-text').textContent = modalTxt;
+  $('update-progress-text').textContent = liveTxt;
 
-  $('sidebar-update-fill').style.width = `${p.pct}%`;
-  $('sidebar-update-pct').textContent = `${p.pct}%`;
-  $('sidebar-update-status').textContent = sideTxt;
+  $('bottom-update-pct').textContent = `${p.pct}%`;
+  $('bottom-update-status').textContent = liveTxt;
 });
 
 async function triggerInstallUpdate() {
   if (!latestUpdateInfo || !latestUpdateInfo.downloadUrl) return;
-  $('btn-update-install').disabled = true;
-  $('btn-update-install').textContent = 'Updating…';
-  $('update-progress-wrap').classList.remove('hidden');
-  $('update-progress-fill').style.width = '2%';
+  $('update-modal-backdrop').classList.add('hidden');
+  syncModalDim();
 
-  $('btn-sidebar-install-update').disabled = true;
-  $('btn-sidebar-install-update').textContent = 'Updating…';
-  $('sidebar-update-prog').classList.remove('hidden');
-  $('sidebar-update-fill').style.width = '2%';
-  $('sidebar-update-pct').textContent = '2%';
-  $('sidebar-update-status').textContent = 'Downloading…';
+  // Always show live progress in the bottom bar
+  $('bottom-update-bar').classList.remove('hidden');
+  document.body.classList.add('has-bottom-update');
+  $('btn-bottom-update-dismiss').classList.add('hidden');
+  $('btn-bottom-install-update').disabled = true;
+  $('btn-bottom-install-update').textContent = 'Downloading…';
+  $('bottom-update-prog').classList.remove('hidden');
+  updateBarSpring.setImmediate(0);
+  $('bottom-update-pct').textContent = '0%';
+  $('bottom-update-status').textContent = 'Connecting to GitHub Releases…';
+
+  $('btn-update-install').disabled = true;
+  $('btn-update-install').textContent = 'Downloading…';
+  $('update-progress-wrap').classList.remove('hidden');
+  $('update-progress-pct').textContent = '0%';
+  $('update-progress-text').textContent = 'Connecting to GitHub Releases…';
 
   try {
     await window.frameforge.installUpdate({
       downloadUrl: latestUpdateInfo.downloadUrl,
       latestVersion: latestUpdateInfo.latestVersion,
       isPortable: latestUpdateInfo.isPortable,
+      sizeBytes: latestUpdateInfo.sizeBytes || 0,
     });
-    $('update-progress-text').textContent = 'Installing & restarting BareFrame…';
-    $('sidebar-update-status').textContent = 'Restarting…';
+    updateBarSpring.animateTo(100);
+    $('bottom-update-pct').textContent = '100%';
+    $('bottom-update-status').textContent = 'Installing & restarting BareFrame…';
+    $('btn-bottom-install-update').textContent = 'Restarting…';
     showToast('Installing update and restarting BareFrame…');
   } catch (err) {
     showToast(`Update failed: ${err.message}`);
+    $('btn-bottom-install-update').disabled = false;
+    $('btn-bottom-install-update').textContent = 'Retry Update';
+    $('btn-bottom-update-dismiss').classList.remove('hidden');
     $('btn-update-install').disabled = false;
     $('btn-update-install').textContent = 'Retry Update';
-    $('btn-sidebar-install-update').disabled = false;
-    $('btn-sidebar-install-update').textContent = 'Retry Update';
   }
 }
 
 $('btn-update-pill').onclick = () => {
-  if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
+  if (latestUpdateInfo) showBottomUpdateBar(latestUpdateInfo);
 };
-$('btn-sidebar-install-update').onclick = triggerInstallUpdate;
+$('btn-bottom-install-update').onclick = triggerInstallUpdate;
+$('btn-bottom-update-dismiss').onclick = hideBottomUpdateBar;
 $('btn-update-later').onclick = () => {
   $('update-modal-backdrop').classList.add('hidden');
   syncModalDim();

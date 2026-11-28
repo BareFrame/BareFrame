@@ -374,68 +374,107 @@ body.modal-active .app-shell {
   color: var(--label-secondary);
 }
 
-/* Sidebar Update Card (directly under Pre-Match Boost) */
-.sidebar-update-card {
-  margin-top: 10px;
-  padding: 11px;
-  border-radius: 11px;
-  background: rgba(10, 132, 255, 0.1);
+/* Bottom Floating Translucent Update Bar (§12 Apple Materials) */
+.bottom-update-bar {
+  position: fixed;
+  left: 248px;
+  right: 20px;
+  bottom: 16px;
+  z-index: 80;
+  padding: 12px 16px;
+  border-radius: 13px;
+  background: rgba(22, 26, 36, 0.88);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
   border: 1px solid var(--blue-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 14px 36px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  animation: updateBarIn 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.sidebar-update-head {
-  font-size: 12px;
+@keyframes updateBarIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bottom-update-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.bottom-update-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.bottom-update-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex-shrink: 0;
+}
+
+.bottom-update-info strong {
+  font-size: 13px;
   font-weight: 600;
   color: var(--label-primary);
   letter-spacing: -0.01em;
 }
 
-.btn-sidebar-update {
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: 7px;
-  background: var(--blue);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background-color 140ms ease, transform 90ms ease-out;
+.bottom-update-meta {
+  font-size: 11.5px;
+  color: var(--label-secondary);
 }
 
-.btn-sidebar-update:hover:not(:disabled) { background: var(--blue-hover); }
-.btn-sidebar-update:active:not(:disabled) { transform: scale(0.97); }
-.btn-sidebar-update:disabled { opacity: 0.55; cursor: not-allowed; }
+.bottom-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
-.sidebar-update-prog {
+.bottom-update-prog {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
-.sidebar-update-meta {
+.bottom-update-prog-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
+  align-items: baseline;
+  font-size: 11.5px;
   color: var(--blue-text);
-  font-family: var(--mono);
 }
 
-.sidebar-update-rail {
+.bottom-update-rail {
   width: 100%;
-  height: 5px;
+  height: 6px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.11);
   overflow: hidden;
 }
 
-.sidebar-update-fill {
+.bottom-update-fill {
   height: 100%;
   border-radius: 99px;
-  background: var(--blue);
-  transition: width 180ms ease;
+  background: linear-gradient(90deg, var(--red), var(--blue));
+}
+
+body.has-bottom-update .content {
+  padding-bottom: 92px;
+}
+
+body.has-bottom-update .toast {
+  bottom: 88px;
 }
 
 .sidebar-footer {
@@ -1534,6 +1573,7 @@ details[open] > summary .expand-symbol { color: var(--blue-text); }
   .panel-header,
   .modal,
   .toast,
+  .bottom-update-bar,
   .game-picker-overlay {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;

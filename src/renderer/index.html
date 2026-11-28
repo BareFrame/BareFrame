@@ -15,7 +15,7 @@
         <img src="../../assets/icon.png" alt="BareFrame" width="22" height="22" style="display:block;" />
       </div>
       <span class="brand-name">BareFrame</span>
-      <span id="app-version-pill" class="version-pill">v1.0.12</span>
+      <span id="app-version-pill" class="version-pill">v1.0.13</span>
     </div>
     <div class="titlebar-right">
       <button id="btn-update-pill" class="update-pill hidden" type="button">Update Available</button>
@@ -86,23 +86,6 @@
             </svg>
             <span>Pre-Match Boost</span>
           </button>
-
-          <!-- Automatic Update Card directly under Pre-Match Boost -->
-          <div id="sidebar-update-card" class="sidebar-update-card hidden">
-            <div class="sidebar-update-head">
-              <span id="sidebar-update-ver">Update Available</span>
-            </div>
-            <button id="btn-sidebar-install-update" class="btn-sidebar-update" type="button">Install Update</button>
-            <div id="sidebar-update-prog" class="sidebar-update-prog hidden">
-              <div class="sidebar-update-meta">
-                <span id="sidebar-update-status">Downloading…</span>
-                <span id="sidebar-update-pct">0%</span>
-              </div>
-              <div class="sidebar-update-rail">
-                <div id="sidebar-update-fill" class="sidebar-update-fill" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
         </nav>
       </div>
 
@@ -460,6 +443,30 @@
           <span>Do not show this again automatically</span>
         </label>
         <button id="btn-tip-close" class="btn-ghost btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Translucent Update Bar -->
+  <div id="bottom-update-bar" class="bottom-update-bar hidden" role="region" aria-label="Application update">
+    <div class="bottom-update-top">
+      <div class="bottom-update-info">
+        <span class="bottom-update-dot" aria-hidden="true"></span>
+        <strong id="bottom-update-title">BareFrame update available</strong>
+        <span id="bottom-update-meta" class="bottom-update-meta mono tabular"></span>
+      </div>
+      <div class="bottom-update-actions" id="bottom-update-actions">
+        <button id="btn-bottom-update-dismiss" class="btn-ghost btn-sm" type="button">Later</button>
+        <button id="btn-bottom-install-update" class="btn-blue-solid btn-sm" type="button">Install Update</button>
+      </div>
+    </div>
+    <div id="bottom-update-prog" class="bottom-update-prog hidden">
+      <div class="bottom-update-prog-meta mono tabular">
+        <span id="bottom-update-status">Connecting…</span>
+        <span id="bottom-update-pct">0%</span>
+      </div>
+      <div class="bottom-update-rail">
+        <div id="bottom-update-fill" class="bottom-update-fill" style="width:0%"></div>
       </div>
     </div>
   </div>
