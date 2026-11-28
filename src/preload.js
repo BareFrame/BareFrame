@@ -31,6 +31,19 @@ contextBridge.exposeInMainWorld('frameforge', {
     ipcRenderer.on('throttle:sample', handler);
     return () => ipcRenderer.removeListener('throttle:sample', handler);
   },
+  runRamStress: () => ipcRenderer.invoke('stress:ram'),
+  onRamSample: (cb) => {
+    const handler = (_e, sample) => cb(sample);
+    ipcRenderer.on('stress:ramSample', handler);
+    return () => ipcRenderer.removeListener('stress:ramSample', handler);
+  },
+  sampleGpuSensors: () => ipcRenderer.invoke('stress:gpuSensors'),
+  runLatencyStress: () => ipcRenderer.invoke('stress:latency'),
+  onLatencySample: (cb) => {
+    const handler = (_e, sample) => cb(sample);
+    ipcRenderer.on('stress:latencySample', handler);
+    return () => ipcRenderer.removeListener('stress:latencySample', handler);
+  },
   getBiosGuide: (vendor, model) => ipcRenderer.invoke('bios:guide', vendor, model),
   rebootToBios: () => ipcRenderer.invoke('bios:reboot'),
   rebootWindows: () => ipcRenderer.invoke('system:reboot'),

@@ -8,6 +8,7 @@ const { getTweakList, applyTweaks, revertTweaks, BACKUP_ROOT } = require('./engi
 const { getGameList, detectInstalledGames } = require('./engine/games');
 const { getValorantTelemetry } = require('./engine/telemetry');
 const { runThrottleTest, getBiosGuide, rebootToBios } = require('./engine/throttle');
+const { runRamStressTest, sampleGpuSensors, runLatencyStressTest } = require('./engine/stress');
 const { scanBackgroundHogs, purgeBackgroundHogs, launchGame } = require('./engine/boost');
 const { checkForUpdate, downloadUpdate, downloadAndApplyPatch } = require('./engine/updater');
 const { runPS } = require('./engine/ps');
@@ -107,6 +108,22 @@ ipcMain.handle('telemetry:get', async () => {
 ipcMain.handle('throttle:run', async () => {
   return runThrottleTest((sample) => {
     mainWindow?.webContents.send('throttle:sample', sample);
+  });
+});
+
+ipcMain.handle('stress:ram', async () => {
+  return runRamStressTest((sample) => {
+    mainWindow?.webContents.send('stress:ramSample', sample);
+  });
+});
+
+ipcMain.handle('stress:gpuSensors', async () => {
+  return sampleGpuSensors();
+});
+
+ipcMain.handle('stress:latency', async () => {
+  return runLatencyStressTest((sample) => {
+    mainWindow?.webContents.send('stress:latencySample', sample);
   });
 });
 

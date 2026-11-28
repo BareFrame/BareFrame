@@ -1748,3 +1748,146 @@ details[open] > summary .expand-symbol { color: var(--blue-text); }
     background: #141720;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   Categorized Performance Groups, BIOS Section & Stress Tests Suite
+   -------------------------------------------------------------------------- */
+.tweak-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tweak-group:last-child {
+  margin-bottom: 0;
+}
+
+.tweak-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+}
+
+.tweak-group-title {
+  font-size: 12.2px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.tweak-group-meta {
+  font-size: 11.2px;
+  color: var(--label-tertiary);
+}
+
+.tweak-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bios-perf-card {
+  margin-top: 4px;
+}
+
+.stress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 980px) {
+  .stress-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stress-card .card-header-row {
+  margin-bottom: 2px;
+  align-items: flex-start;
+}
+
+.gpu-canvas-box {
+  position: relative;
+  height: 175px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-inset);
+  border: 1px solid var(--separator);
+}
+
+#gpu-stress-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gpu-canvas-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  font-size: 12.6px;
+  color: var(--label-secondary);
+  background: var(--bg-inset);
+}
+
+.gpu-hud-strip {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 11.2px;
+  font-weight: 600;
+  color: var(--label-primary);
+  background: rgba(20, 27, 38, 0.84);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--separator-strong);
+}
+
+.boost-group {
+  margin-bottom: 10px;
+}
+
+.boost-group:last-child {
+  margin-bottom: 0;
+}
+
+.boost-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 5px;
+}
+
+.boost-group-title {
+  font-size: 11.8px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.boost-group-meta {
+  font-size: 11.2px;
+  color: var(--label-tertiary);
+}

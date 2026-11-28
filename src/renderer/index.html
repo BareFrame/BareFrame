@@ -16,7 +16,7 @@
       </div>
       <span class="brand-name">BareFrame</span>
       <span id="app-beta-pill" class="beta-pill">Beta</span>
-      <span id="app-version-pill" class="version-pill">v0.1.14</span>
+      <span id="app-version-pill" class="version-pill">v0.1.15</span>
     </div>
     <div class="titlebar-right">
       <button id="btn-update-pill" class="update-pill hidden" type="button">Update available</button>
@@ -69,7 +69,7 @@
             <svg class="nav-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="2.5 12 6 12 8.5 5 11.5 15 14 10 17.5 10" />
             </svg>
-            <span>CPU &amp; BIOS</span>
+            <span>Stress tests</span>
           </button>
 
           <button class="nav-item" data-tab="telemetry">
@@ -227,6 +227,22 @@
 
         <div id="tweaks-list" class="tweaks-list"></div>
 
+        <!-- BIOS & UEFI BOOT SECTION (at bottom of Performance) -->
+        <div id="bios-section-card" class="card bios-perf-card">
+          <div class="card-header-row">
+            <div>
+              <div class="card-title" id="bios-card-title">Motherboard BIOS settings</div>
+              <div class="subtitle">Hardware-level XMP/EXPO, power limits, and Resizable BAR settings for your detected board</div>
+            </div>
+            <div class="header-actions">
+              <span id="bios-key-pill" class="pill-blue">Del / F2</span>
+              <button id="btn-reboot-bios" class="btn-secondary btn-sm">Restart to BIOS</button>
+            </div>
+          </div>
+          <p class="muted-note">BIOS settings cannot be changed from Windows, and kernel MSR drivers are blocked by anti-cheat systems. Recommended settings for your board:</p>
+          <ol id="bios-steps" class="bios-steps"></ol>
+        </div>
+
         <details id="console-details" class="card console-details">
           <summary class="console-summary">
             <div class="console-summary-left">
@@ -242,38 +258,96 @@
         </details>
       </section>
 
-      <!-- CPU & BIOS TAB -->
+      <!-- STRESS TESTS TAB -->
       <section id="tab-throttle" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>CPU &amp; BIOS</h1>
-            <p class="subtitle">35-second sustained load test to spot 65W PL1 power limits or thermal throttling past the 28s boost window</p>
+            <h1>Stress tests</h1>
+            <p class="subtitle">Test sustained CPU clocks, GPU render stability, RAM bandwidth, and system latency</p>
           </div>
           <div class="header-actions">
-            <button id="btn-run-throttle" class="btn-primary">Run 35s clock test</button>
-            <button id="btn-reboot-bios" class="btn-secondary">Restart to BIOS</button>
+            <button id="btn-run-all-stress" class="btn-primary">Run all tests</button>
           </div>
         </div>
 
-        <div class="two-col">
-          <div class="card">
+        <div class="stress-grid">
+          <!-- 1. CPU Stress Test -->
+          <div class="card stress-card">
             <div class="card-header-row">
-              <div class="card-title">Sustained CPU clock (MHz)</div>
-              <span id="throttle-verdict-pill" class="pill-neutral">Not run</span>
+              <div>
+                <div class="card-title">CPU sustained clock (35s)</div>
+                <div class="subtitle">Multi-core load past the 28s boost window to catch PL1 or thermal throttling</div>
+              </div>
+              <div class="header-actions">
+                <span id="throttle-verdict-pill" class="pill-neutral">Not run</span>
+                <button id="btn-run-throttle" class="btn-secondary btn-sm">Run CPU</button>
+              </div>
             </div>
             <div id="throttle-chart-wrap" class="chart-wrap">
-              <div class="empty-state">Run the 35s clock test to compare boost vs. sustained CPU clock speed.</div>
+              <div class="empty-state">Run the 35s test to compare turbo boost vs. sustained CPU clock speed.</div>
             </div>
             <div id="throttle-summary" class="throttle-summary"></div>
           </div>
 
-          <div class="card">
+          <!-- 2. GPU Stress Test -->
+          <div class="card stress-card">
             <div class="card-header-row">
-              <div class="card-title" id="bios-card-title">Motherboard BIOS settings</div>
-              <span id="bios-key-pill" class="pill-blue">Del / F2</span>
+              <div>
+                <div class="card-title">GPU render &amp; thermal (20s)</div>
+                <div class="subtitle">Live WebGL2 shader load with frame-time stability and GPU sensor polling</div>
+              </div>
+              <div class="header-actions">
+                <span id="gpu-stress-verdict" class="pill-neutral">Not run</span>
+                <button id="btn-run-gpu-stress" class="btn-secondary btn-sm">Run GPU</button>
+              </div>
             </div>
-            <p class="muted-note">BIOS settings cannot be changed from Windows, and kernel MSR drivers are blocked by anti-cheat systems. Recommended settings for your board:</p>
-            <ol id="bios-steps" class="bios-steps"></ol>
+            <div class="gpu-canvas-box">
+              <canvas id="gpu-stress-canvas" width="520" height="175"></canvas>
+              <div id="gpu-stress-placeholder" class="gpu-canvas-placeholder">Run the 20s shader load to check frame pacing, 1% lows, and GPU temperature.</div>
+              <div id="gpu-hud-strip" class="gpu-hud-strip mono tabular hidden">
+                <span id="gpu-hud-fps">-- FPS</span>
+                <span id="gpu-hud-ms">-- ms</span>
+                <span id="gpu-hud-temp">--°C</span>
+                <span id="gpu-hud-clock">-- MHz</span>
+              </div>
+            </div>
+            <div id="gpu-stress-summary" class="throttle-summary"></div>
+          </div>
+
+          <!-- 3. RAM Stress Test -->
+          <div class="card stress-card">
+            <div class="card-header-row">
+              <div>
+                <div class="card-title">RAM bandwidth &amp; stability (12s)</div>
+                <div class="subtitle">6-pass memory copy throughput (GB/s) and bit-pattern XMP/EXPO verification</div>
+              </div>
+              <div class="header-actions">
+                <span id="ram-stress-verdict" class="pill-neutral">Not run</span>
+                <button id="btn-run-ram-stress" class="btn-secondary btn-sm">Run RAM</button>
+              </div>
+            </div>
+            <div id="ram-stress-chart" class="chart-wrap">
+              <div class="empty-state">Run the 12s memory test to verify copy bandwidth and check for bit errors.</div>
+            </div>
+            <div id="ram-stress-summary" class="throttle-summary"></div>
+          </div>
+
+          <!-- 4. System & Network Latency Test -->
+          <div class="card stress-card">
+            <div class="card-header-row">
+              <div>
+                <div class="card-title">System &amp; network latency (10s)</div>
+                <div class="subtitle">Measures OS timer wake jitter (ms) and live ping variance to 1.1.1.1</div>
+              </div>
+              <div class="header-actions">
+                <span id="latency-stress-verdict" class="pill-neutral">Not run</span>
+                <button id="btn-run-latency-stress" class="btn-secondary btn-sm">Run latency</button>
+              </div>
+            </div>
+            <div id="latency-stress-chart" class="chart-wrap">
+              <div class="empty-state">Run the 10s test to measure Windows scheduling jitter and network ping stability.</div>
+            </div>
+            <div id="latency-stress-summary" class="throttle-summary"></div>
           </div>
         </div>
       </section>
@@ -375,7 +449,7 @@
   <div id="game-picker-overlay" class="game-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="game-picker-title">
     <div class="game-picker-inner">
       <div class="game-picker-head">
-        <div id="game-picker-kicker" class="game-picker-kicker">BareFrame Beta (v0.1.14)</div>
+        <div id="game-picker-kicker" class="game-picker-kicker">BareFrame Beta (v0.1.15)</div>
         <h1 id="game-picker-title">Choose a game profile</h1>
         <p class="game-picker-sub">
           BareFrame tailors CPU priority, Windows Security exclusions, display settings, and Background apps protection for your selected game. You can switch anytime from the sidebar.

@@ -345,34 +345,57 @@ function renderTweaks() {
   const statusMap = state.audit?.status || {};
 
   const impactLabel = { 'VERY HIGH': 'Very high', HIGH: 'High', MED: 'Medium', LOW: 'Low' };
-  container.innerHTML = state.tweaks
-    .map((t) => {
-      const done = Boolean(statusMap[t.id]);
-      const checked = state.selectedTweaks.has(t.id) ? 'checked' : '';
-      const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-neutral';
+  const GROUP_ORDER = ['CPU & power', 'Hardware & network', 'Memory & security', 'Game & graphics'];
+  const grouped = new Map(GROUP_ORDER.map((g) => [g, []]));
+
+  for (const t of state.tweaks) {
+    const gName = t.group && grouped.has(t.group) ? t.group : 'Game & graphics';
+    grouped.get(gName).push(t);
+  }
+
+  container.innerHTML = GROUP_ORDER.filter((g) => grouped.get(g).length > 0)
+    .map((groupName) => {
+      const items = grouped.get(groupName);
+      const appliedCount = items.filter((t) => Boolean(statusMap[t.id])).length;
+      const cardsHtml = items
+        .map((t) => {
+          const done = Boolean(statusMap[t.id]);
+          const checked = state.selectedTweaks.has(t.id) ? 'checked' : '';
+          const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-neutral';
+          return `
+          <div class="tweak-card ${t.optIn ? 'opt-in' : ''}">
+            <div class="tweak-row-compact">
+              <label class="tweak-check-wrap">
+                <span class="apple-switch">
+                  <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </span>
+                <span class="tweak-name">${t.name}</span>
+              </label>
+              <div class="tweak-badges">
+                <span class="${impactCls}">${impactLabel[t.impact] || t.impact}</span>
+                ${t.optIn ? '<span class="pill-opt">Optional</span>' : ''}
+                ${t.requiresReboot ? '<span class="pill-neutral">Restart</span>' : ''}
+                <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Default'}</span>
+                <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
+              </div>
+            </div>
+            <div class="tweak-drawer-collapse">
+              <div class="tweak-drawer-inner">
+                <div class="tweak-desc-drawer">${t.description}</div>
+              </div>
+            </div>
+          </div>`;
+        })
+        .join('');
+
       return `
-      <div class="tweak-card ${t.optIn ? 'opt-in' : ''}">
-        <div class="tweak-row-compact">
-          <label class="tweak-check-wrap">
-            <span class="apple-switch">
-              <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
-              <span class="switch-track"><span class="switch-thumb"></span></span>
-            </span>
-            <span class="tweak-name">${t.name}</span>
-          </label>
-          <div class="tweak-badges">
-            <span class="${impactCls}">${impactLabel[t.impact] || t.impact}</span>
-            ${t.optIn ? '<span class="pill-opt">Optional</span>' : ''}
-            ${t.requiresReboot ? '<span class="pill-neutral">Restart</span>' : ''}
-            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Default'}</span>
-            <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
-          </div>
+      <div class="tweak-group">
+        <div class="tweak-group-head">
+          <span class="tweak-group-title">${groupName}</span>
+          <span class="tweak-group-meta mono tabular">${appliedCount}/${items.length} applied</span>
         </div>
-        <div class="tweak-drawer-collapse">
-          <div class="tweak-drawer-inner">
-            <div class="tweak-desc-drawer">${t.description}</div>
-          </div>
-        </div>
+        <div class="tweak-group-items">${cardsHtml}</div>
       </div>`;
     })
     .join('');
@@ -538,7 +561,13 @@ $('btn-hero-optimize').onclick = async () => {
 
 $('btn-hero-revert').onclick = () => $('btn-revert-all').click();
 $('btn-results-reboot').onclick = () => $('btn-reboot-now').click();
-$('btn-results-bios').onclick = () => switchTab('throttle');
+$('btn-results-bios').onclick = () => {
+  switchTab('tweaks');
+  setTimeout(() => {
+    const biosCard = $('bios-section-card');
+    if (biosCard) biosCard.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  }, 60);
+};
 $('btn-results-tip').onclick = () => $('btn-tip-sidebar').click();
 
 $('btn-apply-tweaks').onclick = async () => {
@@ -651,40 +680,398 @@ function renderThrottleChart(samples, isLive = false) {
 window.frameforge.onThrottleSample((sample) => {
   state.throttleSamples.push(sample);
   renderThrottleChart(state.throttleSamples, true);
-  $('throttle-summary').textContent = `Sampling T+${sample.sec}s / 34s · Active P-Core Avg: ${sample.avgMHz} MHz (Peak: ${sample.peakMHz} MHz)`;
+  $('throttle-summary').textContent = `Sampling T+${sample.sec}s / 34s · Avg: ${sample.avgMHz} MHz (Peak: ${sample.peakMHz} MHz)`;
 });
 
-$('btn-run-throttle').onclick = async () => {
+async function runCpuStress() {
   state.throttleSamples = [];
   $('btn-run-throttle').disabled = true;
-  $('btn-run-throttle').textContent = 'Testing (35s)…';
+  $('btn-run-throttle').textContent = 'Running (35s)…';
   $('throttle-verdict-pill').textContent = 'Running';
   $('throttle-verdict-pill').className = 'pill-blue';
-  $('throttle-summary').textContent = 'Applying sustained 6-thread CPU load to measure 28s Tau / PL1 and thermal stability…';
+  $('throttle-summary').textContent = 'Applying sustained multi-core load to check 28s boost / PL1 and thermal stability…';
   try {
     const res = await window.frameforge.runThrottleTest();
     renderThrottleChart(res.points);
     const pill = $('throttle-verdict-pill');
-    pill.textContent = res.verdict;
+    const prettyVerdict = res.verdict === 'ROCK SOLID' ? 'Stable' : res.verdict === 'MILD THROTTLE' ? 'Mild dip' : 'Throttling';
+    pill.textContent = prettyVerdict;
     pill.className = res.verdict === 'ROCK SOLID' ? 'pill-blue' : res.verdict === 'MILD THROTTLE' ? 'pill-opt' : 'pill-red';
     $('throttle-summary').textContent = res.explanation;
   } catch (err) {
+    $('throttle-verdict-pill').textContent = 'Error';
+    $('throttle-verdict-pill').className = 'pill-red';
     $('throttle-summary').textContent = `Error: ${err.message}`;
   } finally {
     $('btn-run-throttle').disabled = false;
-    $('btn-run-throttle').textContent = 'Run 35s Clock Test';
+    $('btn-run-throttle').textContent = 'Run CPU';
+  }
+}
+
+$('btn-run-throttle').onclick = runCpuStress;
+
+// ---------------- GPU WEBGL2 RENDER & THERMAL STRESS TEST (20s) ----------------
+let gpuStressAbort = false;
+let gpuStressRunning = false;
+
+async function runGpuStress() {
+  if (gpuStressRunning) {
+    gpuStressAbort = true;
+    return;
+  }
+  gpuStressRunning = true;
+  gpuStressAbort = false;
+
+  const btn = $('btn-run-gpu-stress');
+  const pill = $('gpu-stress-verdict');
+  const summary = $('gpu-stress-summary');
+  const canvas = $('gpu-stress-canvas');
+  const placeholder = $('gpu-stress-placeholder');
+  const hud = $('gpu-hud-strip');
+
+  btn.textContent = 'Stop';
+  pill.textContent = 'Running';
+  pill.className = 'pill-blue';
+  placeholder.classList.add('hidden');
+  hud.classList.remove('hidden');
+  summary.textContent = 'Running heavy WebGL2 fragment shader load and polling GPU sensors…';
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(640, Math.round(canvas.clientWidth * dpr));
+  canvas.height = Math.max(220, Math.round(canvas.clientHeight * dpr));
+
+  const gl = canvas.getContext('webgl2', { powerPreference: 'high-performance', antialias: false })
+    || canvas.getContext('webgl', { powerPreference: 'high-performance', antialias: false });
+
+  let program = null;
+  let uTime = null;
+  let uRes = null;
+
+  if (gl) {
+    const vsSrc = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.0,1.0); }`;
+    const fsSrc = `
+      precision highp float;
+      uniform float u_t;
+      uniform vec2 u_res;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+      float noise(vec2 p){
+        vec2 i = floor(p); vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0,0.0)), f.x),
+                   mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), f.x), f.y);
+      }
+      void main(){
+        vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y;
+        float acc = 0.0;
+        vec2 q = uv * 3.0;
+        // Heavy multi-octave procedural ray-field workload to stress GPU shaders
+        for (int i = 0; i < 42; i++) {
+          float fi = float(i) * 0.14;
+          float a = u_t * 0.45 + fi;
+          mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
+          q = m * q * 1.035 + vec2(sin(u_t * 0.6 + fi), cos(u_t * 0.5 - fi)) * 0.12;
+          acc += noise(q + u_t * 0.35) * (0.5 / (1.0 + fi * 0.45));
+        }
+        float wave = 0.5 + 0.5 * sin(acc * 5.2 + length(uv) * 6.0 - u_t * 2.2);
+        vec3 base = vec3(0.106, 0.137, 0.188);
+        vec3 cobalt = vec3(0.106, 0.337, 0.722);
+        vec3 orange = vec3(0.976, 0.416, 0.106);
+        vec3 col = mix(base, cobalt, smoothstep(0.15, 0.72, wave));
+        col = mix(col, orange, pow(smoothstep(0.58, 0.98, wave), 2.0) * 0.85);
+        gl_FragColor = vec4(col, 1.0);
+      }`;
+
+    const compile = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fsSrc));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(program, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uTime = gl.getUniformLocation(program, 'u_t');
+    uRes = gl.getUniformLocation(program, 'u_res');
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  const durationMs = 20000;
+  const startedAt = performance.now();
+  let prev = startedAt;
+  const frameTimes = [];
+  let maxTempC = null;
+  let lastClockMHz = null;
+  let lastUtilPct = null;
+
+  const pollSensors = async () => {
+    try {
+      const s = await window.frameforge.sampleGpuSensors();
+      if (s && s.available) {
+        if (s.tempC != null) {
+          maxTempC = maxTempC == null ? s.tempC : Math.max(maxTempC, s.tempC);
+          $('gpu-hud-temp').textContent = `${Math.round(s.tempC)}°C`;
+        }
+        if (s.clockMHz != null) {
+          lastClockMHz = Math.round(s.clockMHz);
+          $('gpu-hud-clock').textContent = `${lastClockMHz} MHz`;
+        }
+        if (s.utilPct != null) lastUtilPct = Math.round(s.utilPct);
+      } else {
+        $('gpu-hud-temp').textContent = 'N/A';
+        $('gpu-hud-clock').textContent = 'WebGL2';
+      }
+    } catch {}
+  };
+
+  pollSensors();
+  const sensorTimer = setInterval(pollSensors, 1600);
+
+  await new Promise((resolve) => {
+    const tick = (now) => {
+      const elapsed = now - startedAt;
+      if (gpuStressAbort || elapsed >= durationMs) {
+        resolve();
+        return;
+      }
+      const dt = now - prev;
+      prev = now;
+      if (dt > 0.2 && dt < 500) frameTimes.push(dt);
+
+      if (gl && program) {
+        gl.uniform1f(uTime, elapsed / 1000);
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        gl.finish();
+      }
+
+      if (frameTimes.length % 6 === 0 && frameTimes.length > 0) {
+        const recent = frameTimes.slice(-24);
+        const avgMs = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const fps = Math.round(1000 / Math.max(0.5, avgMs));
+        $('gpu-hud-fps').textContent = `${fps} FPS`;
+        $('gpu-hud-ms').textContent = `${avgMs.toFixed(1)} ms`;
+        const rem = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
+        summary.textContent = `Testing GPU (${rem}s left) · ${fps} FPS (${avgMs.toFixed(1)} ms)${maxTempC != null ? ` · Peak ${Math.round(maxTempC)}°C` : ''}`;
+      }
+
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  clearInterval(sensorTimer);
+  gpuStressRunning = false;
+  btn.textContent = 'Run GPU';
+
+  if (frameTimes.length < 5) {
+    pill.textContent = gpuStressAbort ? 'Stopped' : 'Unavailable';
+    pill.className = 'pill-neutral';
+    summary.textContent = gpuStressAbort ? 'GPU test stopped.' : 'WebGL2 GPU context was not available.';
+    return;
+  }
+
+  const sorted = [...frameTimes].sort((a, b) => a - b);
+  const avgMs = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+  const p99Ms = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))];
+  const avgFps = Math.round(1000 / Math.max(0.5, avgMs));
+  const low1Fps = Math.round(1000 / Math.max(0.5, p99Ms));
+  const ratio = low1Fps / Math.max(1, avgFps);
+
+  let verdict = 'Stable';
+  let cls = 'pill-blue';
+  if ((maxTempC != null && maxTempC >= 85) || ratio < 0.55) {
+    verdict = maxTempC != null && maxTempC >= 85 ? 'High temp' : 'Frame spikes';
+    cls = 'pill-red';
+  } else if ((maxTempC != null && maxTempC >= 78) || ratio < 0.72) {
+    verdict = 'Warm / mild dips';
+    cls = 'pill-opt';
+  }
+
+  pill.textContent = verdict;
+  pill.className = cls;
+  const sensorStr = maxTempC != null
+    ? ` · Peak ${Math.round(maxTempC)}°C${lastClockMHz ? ` @ ${lastClockMHz} MHz` : ''}${lastUtilPct != null ? ` (${lastUtilPct}% load)` : ''}`
+    : '';
+  summary.textContent = `Avg ${avgFps} FPS (${avgMs.toFixed(1)} ms) · 1% low ${low1Fps} FPS (${p99Ms.toFixed(1)} ms)${sensorStr}.`;
+}
+
+$('btn-run-gpu-stress').onclick = runGpuStress;
+
+// ---------------- RAM BANDWIDTH & STABILITY STRESS TEST (12s) ----------------
+let ramSamples = [];
+
+function renderRamChart(samples) {
+  const wrap = $('ram-stress-chart');
+  if (!samples.length) return;
+  const W = 520, H = 175, padL = 46, padR = 16, padT = 20, padB = 26;
+  const maxGBs = Math.max(...samples.map((s) => s.copyGBs), 15) * 1.15;
+  const slotW = (W - padL - padR) / 6;
+  const barW = Math.min(44, slotW * 0.52);
+  const yOf = (v) => padT + ((maxGBs - v) / maxGBs) * (H - padT - padB);
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="175">
+      ${[0, Math.round(maxGBs / 2), Math.round(maxGBs)]
+        .map(
+          (v) => `
+        <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#7888A1" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        )
+        .join('')}
+      ${samples
+        .map((s, i) => {
+          const cx = padL + i * slotW + slotW / 2;
+          const top = yOf(s.copyGBs);
+          const h = H - padB - top;
+          const fill = s.errors > 0 ? '#F96A1B' : '#1B56B8';
+          return `
+            <rect class="chart-bar-anim" x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5" fill="${fill}" />
+            <text x="${cx}" y="${top - 6}" fill="#F2F5FA" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.copyGBs}</text>
+            <text x="${cx}" y="${H - 6}" fill="#7888A1" font-family="'JetBrains Mono',Consolas,monospace" font-size="9.5" text-anchor="middle">Pass ${s.pass}</text>`;
+        })
+        .join('')}
+    </svg>`;
+}
+
+window.frameforge.onRamSample((sample) => {
+  ramSamples.push(sample);
+  renderRamChart(ramSamples);
+  $('ram-stress-summary').textContent = `Pass ${sample.pass}/${sample.totalPasses} · ${sample.copyGBs} GB/s copy · ${sample.allocMB} MB verified (${sample.errors} errors)`;
+});
+
+async function runRamStress() {
+  ramSamples = [];
+  const btn = $('btn-run-ram-stress');
+  const pill = $('ram-stress-verdict');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+  pill.textContent = 'Running';
+  pill.className = 'pill-blue';
+  $('ram-stress-summary').textContent = 'Allocating safe memory buffers and running 6 bit-verification + copy passes…';
+  try {
+    const res = await window.frameforge.runRamStress();
+    renderRamChart(res.samples);
+    pill.textContent = res.verdict;
+    pill.className = res.errors > 0 ? 'pill-red' : res.verdict === 'Stable' ? 'pill-blue' : 'pill-opt';
+    $('ram-stress-summary').textContent = res.explanation;
+  } catch (err) {
+    pill.textContent = 'Error';
+    pill.className = 'pill-red';
+    $('ram-stress-summary').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run RAM';
+  }
+}
+
+$('btn-run-ram-stress').onclick = runRamStress;
+
+// ---------------- SYSTEM & NETWORK LATENCY TEST (10s) ----------------
+let latencySamples = [];
+
+function renderLatencyChart(samples, isLive = false) {
+  const wrap = $('latency-stress-chart');
+  if (!samples.length) return;
+  const W = 520, H = 175, padL = 44, padR = 16, padT = 18, padB = 26;
+  const maxMs = Math.max(...samples.map((s) => Math.max(s.avgJitterMs, s.p99Ms)), 4) * 1.2;
+  const xOf = (sec) => padL + ((sec - 1) / 9) * (W - padL - padR);
+  const yOf = (ms) => padT + ((maxMs - ms) / maxMs) * (H - padT - padB);
+  const avgPts = samples.map((s) => `${xOf(s.sec).toFixed(1)},${yOf(s.avgJitterMs).toFixed(1)}`).join(' ');
+  const p99Pts = samples.map((s) => `${xOf(s.sec).toFixed(1)},${yOf(s.p99Ms).toFixed(1)}`).join(' ');
+  const last = samples[samples.length - 1];
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="175">
+      ${[0, Number((maxMs / 2).toFixed(1)), Number(maxMs.toFixed(1))]
+        .map(
+          (v) => `
+        <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#7888A1" font-family="'JetBrains Mono',Consolas,monospace" font-size="9.5" text-anchor="end">${v}ms</text>`
+        )
+        .join('')}
+      <polyline fill="none" stroke="rgba(249,106,27,0.65)" stroke-width="1.6" stroke-dasharray="4,3" points="${p99Pts}" />
+      <polyline fill="none" stroke="#1B56B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${avgPts}" />
+      ${isLive && last ? `<circle class="live-sample-ring" cx="${xOf(last.sec)}" cy="${yOf(last.avgJitterMs)}" r="4.5" fill="none" stroke="#F96A1B" stroke-width="1.5"/>` : ''}
+      ${samples
+        .map(
+          (s) => `
+        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgJitterMs)}" r="3.5" fill="#5C95EB" stroke="#1B2330" stroke-width="1.3"/>
+        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#7888A1" font-family="'JetBrains Mono',Consolas,monospace" font-size="9.5" text-anchor="middle">${s.sec}s</text>`
+        )
+        .join('')}
+    </svg>`;
+}
+
+window.frameforge.onLatencySample((sample) => {
+  latencySamples.push(sample);
+  renderLatencyChart(latencySamples, true);
+  $('latency-stress-summary').textContent = `Second ${sample.sec}/10 · Avg wake jitter ${sample.avgJitterMs} ms · P99 ${sample.p99Ms} ms (dashed orange)`;
+});
+
+async function runLatencyStress() {
+  latencySamples = [];
+  const btn = $('btn-run-latency-stress');
+  const pill = $('latency-stress-verdict');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+  pill.textContent = 'Running';
+  pill.className = 'pill-blue';
+  $('latency-stress-summary').textContent = 'Measuring OS timer scheduling jitter and pinging 1.1.1.1…';
+  try {
+    const res = await window.frameforge.runLatencyStress();
+    renderLatencyChart(res.samples, false);
+    pill.textContent = res.verdict;
+    pill.className = res.verdict === 'Tight timing' ? 'pill-blue' : res.verdict === 'Moderate jitter' ? 'pill-opt' : 'pill-red';
+    $('latency-stress-summary').textContent = res.explanation;
+  } catch (err) {
+    pill.textContent = 'Error';
+    pill.className = 'pill-red';
+    $('latency-stress-summary').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run latency';
+  }
+}
+
+$('btn-run-latency-stress').onclick = runLatencyStress;
+
+$('btn-run-all-stress').onclick = async () => {
+  const allBtn = $('btn-run-all-stress');
+  allBtn.disabled = true;
+  try {
+    allBtn.textContent = 'Running CPU (1/4)…';
+    await runCpuStress();
+    allBtn.textContent = 'Running GPU (2/4)…';
+    await runGpuStress();
+    allBtn.textContent = 'Running RAM (3/4)…';
+    await runRamStress();
+    allBtn.textContent = 'Running latency (4/4)…';
+    await runLatencyStress();
+    showToast('All 4 stress tests finished.');
+  } finally {
+    allBtn.disabled = false;
+    allBtn.textContent = 'Run all tests';
   }
 };
 
 $('btn-reboot-bios').onclick = async () => {
-  if (!(await ensureAdmin('Reboot to UEFI BIOS'))) return;
+  if (!(await ensureAdmin('Restart to BIOS'))) return;
   const ok = await confirmModal(
-    'Reboot to UEFI BIOS?',
-    'Your PC will restart in 8 seconds directly into UEFI firmware setup. Save any open work first.'
+    'Restart to BIOS?',
+    'Your PC will restart in 8 seconds directly into motherboard UEFI BIOS setup. Save any open work first.'
   );
   if (ok) {
     await window.frameforge.rebootToBios();
-    showToast('Rebooting into UEFI BIOS in 8 seconds…');
+    showToast('Restarting to BIOS in 8 seconds…');
   }
 };
 
@@ -818,26 +1205,56 @@ async function loadHogs() {
       return;
     }
 
-    list.innerHTML = state.hogs
-      .map(
-        (h) => `
-      <label class="boost-row">
-        <div class="boost-left">
-          <span class="apple-switch">
-            <input type="checkbox" class="hog-check" data-name="${h.name}" ${h.defaultCheck ? 'checked' : ''} />
-            <span class="switch-track"><span class="switch-thumb"></span></span>
-          </span>
-          <div>
-            <div style="font-weight:600">${h.label || h.name} <span class="pill-neutral">${h.category || 'Background'}</span> ${h.isOverlay ? '<span class="pill-red">Overlay (disable in app)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}${h.needsAdmin ? '<span class="pill-opt">Needs admin</span>' : ''}</div>
-            <div style="font-size:11.5px;color:#6B788E">${h.name}.exe (${h.count} process${h.count === 1 ? '' : 'es'})</div>
+    const BOOST_GROUPS = [
+      { title: 'Browsers', match: ['Browser'] },
+      { title: 'Game launchers', match: ['Launcher'] },
+      { title: 'Media & chat', match: ['Media', 'Chat', 'Voice / Chat', 'Audio App', 'App'] },
+      { title: 'Windows & background', match: ['Windows App', 'Background', 'GPU Hog'] },
+      { title: 'Overlays, clippers & peripherals', match: ['Overlay', 'Clipper', 'Peripheral', 'Tool'] },
+    ];
+
+    const grouped = BOOST_GROUPS.map((g) => ({
+      title: g.title,
+      items: state.hogs.filter((h) => g.match.includes(h.category || 'Background')),
+    })).filter((g) => g.items.length > 0);
+
+    const assigned = new Set(grouped.flatMap((g) => g.items.map((h) => h.name)));
+    const other = state.hogs.filter((h) => !assigned.has(h.name));
+    if (other.length) grouped.push({ title: 'Other background apps', items: other });
+
+    list.innerHTML = grouped
+      .map((g) => {
+        const subMB = Math.round(g.items.reduce((s, h) => s + h.mb, 0));
+        const rows = g.items
+          .map(
+            (h) => `
+          <label class="boost-row">
+            <div class="boost-left">
+              <span class="apple-switch">
+                <input type="checkbox" class="hog-check" data-name="${h.name}" ${h.defaultCheck ? 'checked' : ''} />
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+              </span>
+              <div>
+                <div style="font-weight:600">${h.label || h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (turn off in app)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}${h.needsAdmin ? '<span class="pill-opt">Needs admin</span>' : ''}</div>
+                <div style="font-size:11.5px;color:#7888A1">${h.name}.exe (${h.count} process${h.count === 1 ? '' : 'es'})</div>
+              </div>
+            </div>
+            <div class="boost-meta">
+              <span>${h.mb} MB</span>
+              <span>${h.cpuSec}s CPU</span>
+            </div>
+          </label>`
+          )
+          .join('');
+        return `
+        <div class="boost-group">
+          <div class="boost-group-head">
+            <span class="boost-group-title">${g.title}</span>
+            <span class="boost-group-meta mono tabular">${g.items.length} · ${subMB} MB</span>
           </div>
-        </div>
-        <div class="boost-meta">
-          <span>${h.mb} MB</span>
-          <span>${h.cpuSec}s CPU</span>
-        </div>
-      </label>`
-      )
+          ${rows}
+        </div>`;
+      })
       .join('');
   } catch (err) {
     showToast(`Scan failed: ${err.message}`);
