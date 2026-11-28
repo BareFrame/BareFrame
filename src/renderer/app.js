@@ -797,12 +797,12 @@ async function loadHogs() {
       <label class="boost-row">
         <div class="boost-left">
           <span class="apple-switch">
-            <input type="checkbox" class="hog-check" data-name="${h.name}" ${h.isOverlay || h.keepForGame ? '' : 'checked'} />
+            <input type="checkbox" class="hog-check" data-name="${h.name}" ${h.defaultCheck ? 'checked' : ''} />
             <span class="switch-track"><span class="switch-thumb"></span></span>
           </span>
           <div>
-            <div style="font-weight:600">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (disable in app)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}${h.needsAdmin ? '<span class="pill-opt">Needs admin</span>' : ''}</div>
-            <div style="font-size:11.5px;color:#6B788E">${h.count} process(es)</div>
+            <div style="font-weight:600">${h.label || h.name} <span class="pill-neutral">${h.category || 'Background'}</span> ${h.isOverlay ? '<span class="pill-red">Overlay (disable in app)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}${h.needsAdmin ? '<span class="pill-opt">Needs admin</span>' : ''}</div>
+            <div style="font-size:11.5px;color:#6B788E">${h.name}.exe (${h.count} process${h.count === 1 ? '' : 'es'})</div>
           </div>
         </div>
         <div class="boost-meta">
