@@ -35,7 +35,7 @@ function createWindow() {
     minWidth: 1020,
     minHeight: 680,
     frame: false,
-    backgroundColor: '#0B0E14',
+    backgroundColor: '#1B2330',
     icon: fs.existsSync(iconPath) ? iconPath : undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

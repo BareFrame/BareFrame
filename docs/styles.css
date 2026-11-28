@@ -1,35 +1,35 @@
 /* ==========================================================================
    BareFrame Web — Side-Tabbed Workspace + Orange & Blue + Tactile Motion
-   Palette: Deep Slate-Navy (#0F141D), Machined Slate (#161D29),
-            Signal Orange (#F96A1B), Calibration Cobalt (#2B7FFF)
+   Palette: Cool Grey-Blue Slate (#1B2330), Elevated Slate (#222C3C),
+            Signal Orange (#F96A1B), Deep Cobalt Blue (#1B56B8)
    ========================================================================== */
 
 :root {
-  --ink: #0f141d;
-  --ink-alt: #131924;
-  --sidebar-bg: rgba(19, 25, 36, 0.88);
-  --panel: #161d29;
-  --panel-raised: #1e2738;
-  --inset: #0c1018;
+  --ink: #1b2330;
+  --ink-alt: #171e2a;
+  --sidebar-bg: rgba(23, 30, 42, 0.9);
+  --panel: #222c3c;
+  --panel-raised: #2b384c;
+  --inset: #141b26;
 
-  --line: rgba(226, 234, 248, 0.09);
-  --line-strong: rgba(226, 234, 248, 0.16);
-  --specular: rgba(255, 255, 255, 0.06);
+  --line: rgba(210, 224, 245, 0.1);
+  --line-strong: rgba(210, 224, 245, 0.17);
+  --specular: rgba(255, 255, 255, 0.065);
 
-  --paper: #f4f6fa;
-  --muted: #96a3b8;
-  --subtle: #6b788e;
+  --paper: #f2f5fa;
+  --muted: #a4b2c7;
+  --subtle: #7888a1;
 
   --accent: #f96a1b;
   --accent-hover: #ff7e36;
   --accent-light: #ffa46b;
   --accent-soft: rgba(249, 106, 27, 0.16);
 
-  --cobalt: #2b7fff;
-  --cobalt-hover: #4590ff;
-  --cobalt-light: #6cb2ff;
-  --cobalt-soft: rgba(43, 127, 255, 0.16);
-  --cobalt-line: rgba(108, 178, 255, 0.36);
+  --cobalt: #1b56b8;
+  --cobalt-hover: #2466d1;
+  --cobalt-light: #5c95eb;
+  --cobalt-soft: rgba(27, 86, 184, 0.22);
+  --cobalt-line: rgba(62, 122, 220, 0.42);
 
   --sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
@@ -458,7 +458,7 @@ code {
   transition: background-color 140ms ease, color 140ms ease, transform 90ms ease-out;
   flex-shrink: 0;
 }
-.btn-inline:hover { background: rgba(43, 127, 255, 0.26); color: #fff; }
+.btn-inline:hover { background: rgba(27, 86, 184, 0.34); color: #fff; }
 .btn-inline:active { transform: scale(0.97); }
 
 .apple-switch {
@@ -503,7 +503,7 @@ code {
 .demo-vbs:active .switch-thumb { width: 22px; }
 .apple-switch input:checked + .switch-track {
   background: var(--cobalt);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 0 12px rgba(43, 127, 255, 0.32);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.16), 0 0 12px rgba(27, 86, 184, 0.38);
 }
 .apple-switch input:checked + .switch-track .switch-thumb { transform: translateX(17px); }
 .apple-switch:active input:checked + .switch-track .switch-thumb,
@@ -932,7 +932,7 @@ code {
 }
 .scrubber-track.is-dragging .scrubber-knob {
   transform: translate(-50%, -50%) scale(1.18);
-  box-shadow: 0 0 0 5px rgba(43, 127, 255, 0.25), 0 4px 14px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 5px rgba(27, 86, 184, 0.32), 0 4px 14px rgba(0, 0, 0, 0.55);
 }
 
 .scrubber-labels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 0.55rem; }

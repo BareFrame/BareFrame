@@ -455,7 +455,7 @@ function updateTraceReadouts() {
   traceFpsEl.textContent = `${fps} FPS`;
   traceDipsEl.textContent = `${dips}%`;
   traceLatEl.textContent = `${lat} ms`;
-  traceFpsEl.style.color = blendVal > 0.5 ? '#6cb2ff' : '#ffa46b';
+  traceFpsEl.style.color = blendVal > 0.5 ? '#5c95eb' : '#ffa46b';
   traceDipsEl.style.color = blendVal > 0.5 ? '#f4f6fa' : '#f96a1b';
 }
 
@@ -539,7 +539,7 @@ function drawTraceFrame(phase) {
 
   const y240 = msToY(4.16);
   ctx.save();
-  ctx.strokeStyle = 'rgba(108, 178, 255, 0.45)';
+  ctx.strokeStyle = 'rgba(92, 149, 235, 0.45)';
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(0, y240);
@@ -560,9 +560,9 @@ function drawTraceFrame(phase) {
     ctx.stroke();
   }
 
-  const r = Math.round(249 + (43 - 249) * blendVal);
-  const g = Math.round(106 + (127 - 106) * blendVal);
-  const b = Math.round(27 + (255 - 27) * blendVal);
+  const r = Math.round(249 + (27 - 249) * blendVal);
+  const g = Math.round(106 + (86 - 106) * blendVal);
+  const b = Math.round(27 + (184 - 27) * blendVal);
   const lineColor = `rgb(${r}, ${g}, ${b})`;
 
   let lastX = 0;
@@ -642,7 +642,7 @@ function drawTraceFrame(phase) {
     const tw = ctx.measureText(label).width + 16;
     const bx = Math.min(w - tw - 8, Math.max(8, hx - tw / 2));
     const by = hy > 44 ? hy - 34 : hy + 12;
-    ctx.fillStyle = 'rgba(15, 20, 29, 0.92)';
+    ctx.fillStyle = 'rgba(23, 30, 42, 0.94)';
     ctx.strokeStyle = 'rgba(226, 234, 248, 0.18)';
     ctx.beginPath();
     ctx.roundRect(bx, by, tw, 24, 6);
