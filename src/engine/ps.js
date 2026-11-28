@@ -1,8 +1,14 @@
 const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+let psSeq = 0;
 
 /**
- * Runs a PowerShell script safely using UTF-16LE Base64 -EncodedCommand
- * (eliminates quoting/escaping bugs across Windows shells).
+ * Runs a PowerShell script safely. Uses UTF-16LE Base64 -EncodedCommand for
+ * short scripts and automatically falls back to a temporary UTF-8 BOM .ps1
+ * file when the encoded command would approach Windows' 32,767-char CLI limit.
  */
 function runPS(script, options = {}) {
   const { timeoutMs = 120000, onLine = null } = options;
@@ -10,11 +16,24 @@ function runPS(script, options = {}) {
     const wrapped = `$ProgressPreference = 'SilentlyContinue'\n[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n${script}`;
     const encoded = Buffer.from(wrapped, 'utf16le').toString('base64');
 
-    const child = spawn(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded],
-      { windowsHide: true }
-    );
+    let tmpFile = null;
+    let args;
+    if (encoded.length > 20000) {
+      tmpFile = path.join(os.tmpdir(), `bf-ps-${process.pid}-${Date.now()}-${++psSeq}.ps1`);
+      fs.writeFileSync(tmpFile, '\uFEFF' + wrapped, 'utf8');
+      args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', tmpFile];
+    } else {
+      args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded];
+    }
+
+    const cleanupTmp = () => {
+      if (tmpFile) {
+        try { fs.unlinkSync(tmpFile); } catch {}
+        tmpFile = null;
+      }
+    };
+
+    const child = spawn('powershell.exe', args, { windowsHide: true });
 
     let stdout = '';
     let stderr = '';
@@ -26,6 +45,7 @@ function runPS(script, options = {}) {
           if (!finished) {
             finished = true;
             try { child.kill(); } catch {}
+            cleanupTmp();
             reject(new Error(`PowerShell timed out after ${timeoutMs}ms`));
           }
         }, timeoutMs)
@@ -52,6 +72,7 @@ function runPS(script, options = {}) {
       if (!finished) {
         finished = true;
         if (timer) clearTimeout(timer);
+        cleanupTmp();
         reject(err);
       }
     });
@@ -60,6 +81,7 @@ function runPS(script, options = {}) {
       if (!finished) {
         finished = true;
         if (timer) clearTimeout(timer);
+        cleanupTmp();
         if (onLine && lineBuf.trim()) onLine(lineBuf);
         resolve({ code, stdout: stdout.trim(), stderr: stderr.trim() });
       }

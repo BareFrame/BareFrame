@@ -1141,13 +1141,22 @@ $('btn-game-picker-cancel').onclick = () => {
 $('btn-game-picker-confirm').onclick = confirmGameSelection;
 
 async function bootApp() {
-  initUpdater();
   initSupport();
 
-  const [games, installed] = await Promise.all([
+  const [ver, games, installed] = await Promise.all([
+    window.frameforge.getAppVersion().catch(() => '0.1.0'),
     window.frameforge.getGames(),
     window.frameforge.detectGames(),
   ]);
+  currentAppVersion = ver;
+  const pill = $('app-version-pill');
+  if (pill) pill.textContent = `v${ver}`;
+  const betaPill = $('app-beta-pill');
+  if (betaPill) betaPill.classList.toggle('hidden', !String(ver).startsWith('0.'));
+
+  runUpdateCheck();
+  setInterval(() => runUpdateCheck(), 30 * 60 * 1000);
+
   state.games = games || [];
   state.installedGames = installed || {};
 

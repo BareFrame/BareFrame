@@ -47,12 +47,11 @@ async function scanBackgroundHogs(gameId = 'valorant') {
     } | ConvertTo-Json -Depth 4 -Compress
   `;
   const res = await runPSJson(script, { timeoutMs: 15000 });
-  if (Array.isArray(res.hogs)) {
-    res.hogs = res.hogs.map((h) => ({
-      ...h,
-      keepForGame: keepSet.has(h.name),
-    }));
-  }
+  const rawHogs = Array.isArray(res.hogs) ? res.hogs : (res.hogs ? [res.hogs] : []);
+  res.hogs = rawHogs.map((h) => ({
+    ...h,
+    keepForGame: keepSet.has(h.name),
+  }));
   return res;
 }
 

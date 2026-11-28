@@ -136,7 +136,20 @@ if ('${profile.id}' -eq 'valorant') {
     }
 } elseif ('${profile.id}' -eq 'cs2') {
     $hasLayer = @($layerProps | Where-Object { $_.Name -like '*cs2.exe' -and $_.Value -match 'DISABLEDXMAXIMIZEDWINDOWEDMODE' }).Count -gt 0
-    $gameInstalled = $hasLayer -or (Test-Path 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive')
+    $steamRoots = @('C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam', 'D:\\SteamLibrary', 'E:\\SteamLibrary')
+    $vdf = 'C:\\Program Files (x86)\\Steam\\steamapps\\libraryfolders.vdf'
+    if (Test-Path $vdf) {
+        $vdfTxt = Get-Content $vdf -Raw
+        foreach ($m in [regex]::Matches($vdfTxt, '"path"\\s+"([^"]+)"')) {
+            $p = $m.Groups[1].Value -replace '\\\\\\\\', '\\'
+            if ($p -and ($steamRoots -notcontains $p)) { $steamRoots += $p }
+        }
+    }
+    $cs2OnDisk = $false
+    foreach ($r in $steamRoots) {
+        if (Test-Path (Join-Path $r 'steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe')) { $cs2OnDisk = $true; break }
+    }
+    $gameInstalled = $hasLayer -or $cs2OnDisk
     $gameConfigOk = (-not $gameInstalled) -or $hasLayer
     if (-not $gameConfigOk) { $gameConfigNote = 'Windows Fullscreen Optimizations are still active on cs2.exe.' }
 } elseif ('${profile.id}' -eq 'fortnite') {
