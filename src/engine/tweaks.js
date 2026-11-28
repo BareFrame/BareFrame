@@ -248,13 +248,13 @@ function buildTweaks(gameId = 'valorant') {
   return [
     {
       id: 'mmcss_scheduler',
-      name: 'CPU Scheduler & MMCSS Games Priority',
-      category: 'Kernel & CPU',
+      name: 'Processor Scheduling & Multimedia Class Scheduler (MMCSS)',
+      category: 'System & Processor',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
       requiresReboot: true,
       optIn: false,
-      description: 'Sets SystemResponsiveness=0, MMCSS Games to Priority 6 / High / SFIO High, and Win32PrioritySeparation=0x26 for tighter 1% lows.',
+      description: 'Sets SystemResponsiveness=0, MMCSS Games to Priority 6 / High / SFIO High, and Win32PrioritySeparation=0x26 for consistent frame delivery.',
       apply: `
         $mmcss = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile'
         $games = "$mmcss\\Tasks\\Games"
@@ -280,13 +280,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'kernel_timer',
-      name: 'Global Timer Resolution, No Power Throttling & Static Tick',
-      category: 'Kernel & CPU',
+      name: 'System Timer Resolution & Power Throttling',
+      category: 'System & Processor',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
       requiresReboot: true,
       optIn: false,
-      description: 'Enables GlobalTimerResolutionRequests=1, disables Windows PowerThrottling, locks kernel in RAM (if ≥16GB), and disables dynamic tick on desktops.',
+      description: 'Enables GlobalTimerResolutionRequests=1, disables Windows Power Throttling, keeps kernel pages in physical memory (≥16 GB RAM), and disables dynamic tick on desktops.',
       apply: `
         Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\kernel' -Name 'GlobalTimerResolutionRequests' -Type DWord -Value 1
         New-Item -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Power\\PowerThrottling' -Force | Out-Null
@@ -312,13 +312,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'power_plan',
-      name: 'Ultimate Performance & Hybrid P-Core Power Plan',
+      name: 'Power Mode & Processor Core Parking',
       category: 'Power & Hardware',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: 'Activates Ultimate/High Performance plan, unparks 100% of P/E cores, sets Aggressive boost, prefers P-cores on hybrid CPUs, and disables USB/PCIe power saving.',
+      description: 'Activates Ultimate or High Performance power plan, disables processor core parking, sets Aggressive boost mode, prefers P-cores on hybrid CPUs, and disables PCIe Link State Power Management.',
       apply: `
         $plans = powercfg /list
         if ($plans -notmatch 'Ultimate Performance') {
@@ -350,13 +350,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'usb_power',
-      name: 'Disable USB & Peripheral Power Saving',
+      name: 'USB Selective Suspend & HID Power Management',
       category: 'Power & Hardware',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: 'Turns off "Allow computer to turn off this device" across all USB Root Hubs, mice, and keyboards to stop 1000Hz–8000Hz polling dips.',
+      description: 'Disables "Allow the computer to turn off this device to save power" across USB Root Hubs, mice, and keyboards to prevent high-polling-rate drops.',
       apply: `
         $cnt = 0
         Get-CimInstance -Namespace root\\wmi -ClassName MSPower_DeviceEnable | Where-Object { $_.InstanceName -match 'USB|HID' -and $_.Enable -eq $true } | ForEach-Object {
@@ -374,13 +374,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'gpu_msi',
-      name: 'GPU MSI-X Mode & High Interrupt Priority',
+      name: 'GPU Message Signaled Interrupts (MSI-X)',
       category: 'Power & Hardware',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
       requiresReboot: true,
       optIn: false,
-      description: 'Enables Message Signaled Interrupts (MSI-X) and High DevicePriority on your NVIDIA/AMD PCIe GPU and GPU Audio controller.',
+      description: 'Ensures Message Signaled Interrupts (MSI-X) and High interrupt priority are enabled on your NVIDIA or AMD PCIe graphics device and audio controller.',
       apply: `
         $cnt = 0
         Get-ChildItem 'HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\PCI' | Where-Object { $_.PSChildName -match '^(VEN_10DE|VEN_1002)' } | ForEach-Object {
@@ -409,13 +409,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'ethernet_latency',
-      name: 'Wired Ethernet Low-Latency Tuning',
-      category: 'Network & Latency',
+      name: 'Ethernet Adapter Power Saving & Interrupt Moderation',
+      category: 'Network & Memory',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: 'Disables Energy Efficient Ethernet (EEE), Advanced EEE, Green Ethernet, Flow Control, and Interrupt Moderation on your active wired NIC.',
+      description: 'Disables Energy-Efficient Ethernet (EEE), Advanced EEE, Green Ethernet, Flow Control, and Interrupt Moderation on your active wired network adapter.',
       apply: `
         $nic = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.PhysicalMediaType -notmatch '802\\.11|Wireless' } | Select-Object -First 1
         if ($nic) {
@@ -446,13 +446,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'memory_services',
-      name: 'Disable Memory Compression, Telemetry & Disk Overhead',
-      category: 'Memory & Services',
+      name: 'Memory Compression, SysMain & Diagnostic Telemetry',
+      category: 'Network & Memory',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
       requiresReboot: true,
       optIn: false,
-      description: 'Disables Memory Compression (if ≥16GB RAM), stops SysMain/DiagTrack/WerSvc & noisy CEIP tasks, disables P2P Windows Update uploads, and tunes NTFS.',
+      description: 'Disables Memory Compression (≥16 GB RAM), sets SysMain/DiagTrack/WerSvc to Disabled, pauses CEIP scheduled tasks, turns off Delivery Optimization P2P, and reduces NTFS last-access writes.',
       apply: `
         $os = Get-CimInstance Win32_OperatingSystem
         if (($os.TotalVisibleMemorySize / 1MB) -ge 15) {
@@ -493,13 +493,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'defender_exclusions',
-      name: `Windows Defender Exclusions (${profile.shortName})`,
-      category: `Game · ${profile.shortName}`,
+      name: `Windows Security Folder Exclusions (${profile.shortName})`,
+      category: `Program · ${profile.shortName}`,
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: `Excludes ${profile.defenderHint} from real-time Windows Defender scans to stop mid-match shader & asset stutters.`,
+      description: `Adds ${profile.defenderHint} to Windows Security real-time protection exclusions to prevent mid-session shader compilation stalls.`,
       apply: `
         ${buildDefenderPathsPS(profile.id)}
         $added = @()
@@ -525,13 +525,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'user_gaming',
-      name: `Game Mode, GameDVR OFF & High Priority IFEO (${profile.shortName})`,
-      category: `Game · ${profile.shortName}`,
+      name: `Windows Game Mode, Game Bar Capture & Process Priority (${profile.shortName})`,
+      category: `Program · ${profile.shortName}`,
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: `Locks Game Mode ON, disables GameDVR & background UWP apps, trims shell animation lag, and assigns High CPU priority to ${exeLabel}.`,
+      description: `Enables Windows Game Mode, disables Xbox Game Bar background capture and background UWP apps, disables desktop transparency/window animations, and sets High process priority for ${exeLabel}.`,
       apply: `
         New-Item -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications' -Force | Out-Null
         Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications' -Name 'GlobalUserDisabled' -Type DWord -Value 1
@@ -566,13 +566,13 @@ function buildTweaks(gameId = 'valorant') {
     buildGameConfigTweak(profile),
     {
       id: 'nvidia_shadowplay',
-      name: 'Disable NVIDIA ShadowPlay 120FPS Background Recording',
-      category: 'GPU & Overlays',
+      name: 'NVIDIA Instant Replay Background Capture',
+      category: 'Graphics & Overlay',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
       requiresReboot: false,
       optIn: false,
-      description: 'Turns off ShadowPlay / Instant Replay background recording flags (RecEnabled & DwmDvrEnabled) to eliminate D3D capture hook overhead.',
+      description: 'Disables NVIDIA ShadowPlay / Instant Replay background capture flags (RecEnabled & DwmDvrEnabledV1) to eliminate continuous D3D frame capture overhead.',
       apply: `
         $sp = 'HKCU:\\Software\\NVIDIA Corporation\\Global\\ShadowPlay\\NVSPCAPS'
         if (Test-Path $sp) {
@@ -591,13 +591,13 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'baremetal_vbs',
-      name: 'Bare-Metal Mode (Disable VBS & Hypervisor Tax)',
-      category: 'Advanced (Opt-In)',
+      name: 'Virtualization-Based Security (VBS) & Memory Integrity',
+      category: 'Windows Security (Optional)',
       impact: 'VERY HIGH',
-      safety: 'Opt-In: Disables WSL2/Hyper-V',
+      safety: 'Optional: Disables WSL2/Hyper-V',
       requiresReboot: true,
       optIn: true,
-      description: `Disables Windows Virtualization-Based Security & Hyper-V hypervisor launch (+10–18% CPU FPS). ${profile.vbsNote}`,
+      description: `Disables Windows Virtualization-Based Security (VBS), Memory Integrity (HVCI), and Hyper-V launch (+10–18% CPU FPS). ${profile.vbsNote}`,
       apply: `
         New-Item -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard' -Force | Out-Null
         Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard' -Name 'EnableVirtualizationBasedSecurity' -Type DWord -Value 0

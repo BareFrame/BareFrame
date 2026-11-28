@@ -22,7 +22,7 @@
             <span class="brand-name">BareFrame</span>
             <span class="brand-badges">
               <span class="beta-label">Beta</span>
-              <span class="version-label">v0.1.11</span>
+              <span class="version-label">v0.1.12</span>
             </span>
           </div>
         </a>
@@ -38,7 +38,7 @@
               <rect x="3" y="11" width="6" height="6" rx="1.5" />
               <rect x="11" y="11" width="6" height="6" rx="1.5" />
             </svg>
-            <span>Overview</span>
+            <span>System</span>
           </button>
 
           <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="telemetry">
@@ -47,7 +47,7 @@
               <line x1="10" y1="15" x2="10" y2="5" />
               <line x1="15" y1="15" x2="15" y2="8" />
             </svg>
-            <span>Benchmarks</span>
+            <span>Statistics</span>
           </button>
 
           <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="changes">
@@ -57,7 +57,7 @@
               <line x1="4" y1="14" x2="16" y2="14" />
               <circle cx="13" cy="14" r="2" fill="#171e2a" />
             </svg>
-            <span>12 Tweaks</span>
+            <span>Performance</span>
             <span class="side-count mono">12</span>
           </button>
 
@@ -76,7 +76,7 @@
               <path d="M8.3 8a1.9 1.9 0 0 1 3.5.9c0 1.2-1.8 1.4-1.8 2.6" />
               <circle cx="10" cy="14.2" r="0.6" fill="currentColor" stroke="none" />
             </svg>
-            <span>Questions</span>
+            <span>FAQ</span>
           </button>
         </nav>
       </div>
@@ -104,11 +104,11 @@
       <section id="overview" class="tab-view active" role="tabpanel" aria-label="Overview">
         <div class="view-inner hero-layout">
           <div class="hero-copy">
-            <div class="hero-beta-note">Public beta (v0.1.11)</div>
+            <div class="hero-beta-note">Public beta (v0.1.12)</div>
             <h1 class="hero-title">Steady frames on stock Windows.</h1>
 
             <p class="hero-lead">
-              BareFrame applies 12 documented Windows, power, USB, Ethernet, and game config adjustments in one pass. It creates a System Restore Point and exports registry backups first, skips settings that do not fit your hardware, and reverts cleanly back to stock whenever you want.
+              BareFrame configures 12 documented Windows, power, USB, Ethernet, GPU, and program settings in one pass. It creates a Windows System Restore Point and exports registry backups first, skips settings that do not apply to your hardware, and restores Windows defaults cleanly whenever you want.
             </p>
 
             <div class="hero-actions">
@@ -119,7 +119,7 @@
                 Download portable
               </a>
               <button type="button" class="plain-link" data-tab-link="changes">
-                Inspect all 12 tweaks
+                Inspect all 12 settings
               </button>
             </div>
 
@@ -181,9 +181,9 @@
                   <input type="checkbox" id="demo-vbs-chk" checked />
                   <span class="switch-track"><span class="switch-thumb"></span></span>
                 </span>
-                <span>Include optional Bare-Metal mode (disables VBS and HVCI, keeps TPM 2.0 and Secure Boot on)</span>
+                <span>Include optional VBS &amp; Memory Integrity Off (keeps TPM 2.0 and Secure Boot enabled)</span>
               </label>
-              <button id="btn-run-dry" type="button" class="btn-inline">Run dry-run log</button>
+              <button id="btn-run-dry" type="button" class="btn-inline">Preview activity log</button>
             </div>
 
             <div id="dry-run-collapse" class="dry-run-collapse">
@@ -270,34 +270,34 @@
               </div>
               <div class="scrubber-knob" id="scrubber-knob" aria-hidden="true"></div>
               <div class="scrubber-labels">
-                <button type="button" class="stage-stop" data-stage="0">Stock</button>
-                <button type="button" class="stage-stop" data-stage="1">Windows tweaks</button>
-                <button type="button" class="stage-stop" data-stage="2">BIOS power limit</button>
+                <button type="button" class="stage-stop" data-stage="0">Defaults</button>
+                <button type="button" class="stage-stop" data-stage="1">Windows settings</button>
+                <button type="button" class="stage-stop" data-stage="2">UEFI power limit</button>
                 <button type="button" class="stage-stop" data-stage="3">HVCI off</button>
-                <button type="button" class="stage-stop active" data-stage="4">Bare-Metal</button>
+                <button type="button" class="stage-stop active" data-stage="4">VBS off</button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- TAB 3: 12 TWEAKS -->
-      <section id="changes" class="tab-view" role="tabpanel" aria-label="12 Tweaks">
+      <!-- TAB 3: PERFORMANCE SETTINGS -->
+      <section id="changes" class="tab-view" role="tabpanel" aria-label="Performance Settings">
         <div class="view-inner">
           <div class="section-intro">
             <div>
-              <h2>All 12 tweaks, inspectable before you download</h2>
+              <h2>All 12 Windows &amp; GPU settings, inspectable before you download</h2>
               <p class="section-lead">
-                Every optimization uses documented Windows APIs and adapts to the game profile you select on first launch. Open any row to read the exact registry keys, commands, and rollback behavior from <code>src/engine/tweaks.js</code>.
+                Every setting uses documented Windows APIs and adapts to the program profile you select on first launch. Open any row to read the exact registry keys, commands, and Restore Defaults behavior from <code>src/engine/tweaks.js</code>.
               </p>
             </div>
-            <div class="filter-group" id="tweak-filters" role="group" aria-label="Filter optimizations">
+            <div class="filter-group" id="tweak-filters" role="group" aria-label="Filter settings">
               <div class="filter-pill" id="filter-pill" aria-hidden="true"></div>
               <button type="button" class="filter-chip active" data-cat="all">All (12)</button>
-              <button type="button" class="filter-chip" data-cat="Kernel & CPU">Kernel &amp; CPU</button>
+              <button type="button" class="filter-chip" data-cat="Kernel & CPU">System &amp; CPU</button>
               <button type="button" class="filter-chip" data-cat="Power & Hardware">Power &amp; hardware</button>
               <button type="button" class="filter-chip" data-cat="Network & Memory">Network &amp; memory</button>
-              <button type="button" class="filter-chip" data-cat="Gaming & Opt-In">Game &amp; opt-in</button>
+              <button type="button" class="filter-chip" data-cat="Gaming & Opt-In">Program &amp; security</button>
             </div>
           </div>
 
@@ -305,12 +305,12 @@
 
           <div class="tools-prose">
             <div class="tool-col">
-              <h3>Built-in 35-second throttle detector</h3>
-              <p>Measures sustained P-core clock speed past Intel and AMD's 28-second boost window to spot hidden 65W power limits or thermal throttling, then provides an exact BIOS checklist for your motherboard vendor.</p>
+              <h3>Built-in 35-second clock diagnostic</h3>
+              <p>Measures sustained processor clock speed past Intel and AMD's 28-second boost window to detect 65W PL1 power limits or thermal throttling, then provides UEFI firmware settings for your motherboard vendor.</p>
             </div>
             <div class="tool-col">
-              <h3>Local match log reader and Pre-Match Boost</h3>
-              <p>Reads VALORANT <code>ShooterGame.log</code> files directly on your PC with zero cloud uploads, closes heavy browsers or launchers before you queue, and checks GitHub Releases automatically for updates.</p>
+              <h3>Local Statistics and Background Apps</h3>
+              <p>Reads VALORANT <code>ShooterGame.log</code> files directly on your PC with zero cloud uploads, ends unnecessary background processes before launching, and checks GitHub Releases automatically for lightweight patches.</p>
             </div>
           </div>
         </div>
@@ -320,7 +320,7 @@
       <section id="download" class="tab-view" role="tabpanel" aria-label="Download">
         <div class="view-inner download-layout">
           <div class="download-main">
-            <h2>Download BareFrame Beta (v0.1.11)</h2>
+            <h2>Download BareFrame Beta (v0.1.12)</h2>
             <p class="section-lead">
               Use the Windows installer for Start Menu shortcuts and automatic in-app updates, or grab the portable binary to run directly from any folder.
             </p>
@@ -377,7 +377,7 @@
                 <span class="faq-icon" aria-hidden="true"></span>
               </summary>
               <p>
-                Yes. BareFrame only edits documented Windows settings (registry keys, power plans, services, network adapter properties, and local game config files). It never installs kernel drivers, touches game memory, or disables TPM 2.0 or Secure Boot. If you opt into Bare-Metal mode (VBS and HVCI off) and your specific account prompts for Memory Integrity, click Revert All or disable Bare-Metal mode and reboot.
+                Yes. BareFrame only configures documented Windows settings (registry keys, power plans, services, network adapter properties, and local program config files). It never installs kernel drivers, touches game memory, or disables TPM 2.0 or Secure Boot. If you disable Virtualization-Based Security (VBS) &amp; Memory Integrity and your specific account prompts for Memory Integrity, click Restore Defaults and restart Windows.
               </p>
             </details>
 
@@ -387,7 +387,7 @@
                 <span class="faq-icon" aria-hidden="true"></span>
               </summary>
               <p>
-                Before changing any setting, BareFrame creates a Windows System Restore Point and saves timestamped registry and config copies to <code>Documents\BareFrame\backups\</code>. Clicking Revert All inside the app restores Windows defaults cleanly.
+                Before changing any setting, BareFrame creates a Windows System Restore Point and saves timestamped registry and config copies to <code>Documents\BareFrame\backups\</code>. Clicking Restore Defaults inside the app restores Windows defaults cleanly.
               </p>
             </details>
 

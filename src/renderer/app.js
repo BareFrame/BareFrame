@@ -263,53 +263,53 @@ async function loadAudit() {
     showToast(`Audit error: ${err.message}`);
   } finally {
     $('btn-rescan').disabled = false;
-    $('btn-rescan').textContent = 'Re-Scan';
+    $('btn-rescan').textContent = 'Refresh';
   }
 }
 
 function renderAudit(d) {
   const badge = $('admin-badge');
   if (d.isAdmin) {
-    badge.textContent = 'Admin ready';
+    badge.textContent = 'Administrator';
     badge.className = 'admin-badge is-admin';
     badge.style.cursor = 'default';
     badge.onclick = null;
   } else {
-    badge.textContent = 'Standard mode';
+    badge.textContent = 'Standard user';
     badge.className = 'admin-badge no-admin';
     badge.style.cursor = 'pointer';
-    badge.title = 'Relaunch with Administrator privileges to apply system tweaks';
+    badge.title = 'Relaunch with Administrator privileges to apply system settings';
     badge.onclick = () => ensureAdmin('Enable Administrator Mode');
   }
 
   scoreSpring.animateTo(d.score);
 
   $('score-verdict').textContent =
-    d.score >= 90 ? 'Tuned' : d.score >= 70 ? 'Mostly tuned' : d.score >= 45 ? 'Bottlenecks found' : 'Stock overhead';
+    d.score >= 90 ? 'Configured' : d.score >= 70 ? 'Partially configured' : d.score >= 45 ? 'Attention recommended' : 'Windows defaults';
   const doneCount = Object.values(d.status).filter(Boolean).length;
   const totalCount = Object.keys(d.status).length;
-  $('score-sub').textContent = `${doneCount} of ${totalCount} subsystems tuned`;
+  $('score-sub').textContent = `${doneCount} of ${totalCount} settings applied`;
   $('nav-tweaks-badge').textContent = `${doneCount}/${totalCount}`;
 
   // Hardware
   const h = d.hardware;
   $('hw-cpu').textContent = `${h.cpuName} (${h.cpuCores}C/${h.cpuThreads}T)`;
   $('hw-gpu').textContent = `${h.gpuName}${h.gpuTempC != null ? `, ${h.gpuTempC}°C` : ''}`;
-  $('hw-ram').textContent = `${h.ramTotalGB} GB (${h.ramSticks}× ${h.ramSpeedMHz} MHz, ${h.ramFreeGB} GB free)`;
-  $('hw-board').textContent = `${h.boardVendor} ${h.boardModel} (BIOS ${h.biosVersion})`;
-  $('hw-disp').textContent = `${h.resolution} at ${h.refreshRate} Hz, ReBAR ${h.rebarMB >= 4096 ? `${Math.round(h.rebarMB / 1024)} GB on` : 'check BIOS'}`;
-  $('hw-sys').textContent = `${h.activePowerPlan}, ${h.nicName}, VBS ${d.details.vbsStatus === 0 ? 'off (Bare-Metal)' : 'on'}`;
+  $('hw-ram').textContent = `${h.ramTotalGB} GB (${h.ramSticks}× ${h.ramSpeedMHz} MHz, ${h.ramFreeGB} GB available)`;
+  $('hw-board').textContent = `${h.boardVendor} ${h.boardModel} (UEFI ${h.biosVersion})`;
+  $('hw-disp').textContent = `${h.resolution} at ${h.refreshRate} Hz, ReBAR ${h.rebarMB >= 4096 ? `${Math.round(h.rebarMB / 1024)} GB enabled` : 'check UEFI'}`;
+  $('hw-sys').textContent = `${h.activePowerPlan}, ${h.nicName}, VBS ${d.details.vbsStatus === 0 ? 'Off' : 'On'}`;
 
-  // Bottlenecks
+  // System Recommendations
   const list = $('bottlenecks-list');
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
     const g = getActiveGame();
-    countPill.textContent = 'All clear';
+    countPill.textContent = 'Up to date';
     countPill.className = 'pill-blue';
-    list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
+    list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">All evaluated Windows, hardware, and ${g.shortName} settings are configured.</div>`;
   } else {
-    countPill.textContent = `${d.bottlenecks.length} found`;
+    countPill.textContent = `${d.bottlenecks.length} recommended`;
     countPill.className = 'pill-red';
     const sevLabel = { HIGH: 'High', MED: 'Medium', LOW: 'Low' };
     list.innerHTML = d.bottlenecks
@@ -362,9 +362,9 @@ function renderTweaks() {
           </label>
           <div class="tweak-badges">
             <span class="${impactCls}">${impactLabel[t.impact] || t.impact}</span>
-            ${t.optIn ? '<span class="pill-opt">Opt-in</span>' : ''}
-            ${t.requiresReboot ? '<span class="pill-neutral">Reboot</span>' : ''}
-            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Stock'}</span>
+            ${t.optIn ? '<span class="pill-opt">Optional</span>' : ''}
+            ${t.requiresReboot ? '<span class="pill-neutral">Restart required</span>' : ''}
+            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Default'}</span>
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
         </div>
@@ -456,9 +456,9 @@ window.frameforge.onTweakProgress((prog) => {
 function renderResultsBreakdown(res) {
   const card = $('hero-results-card');
   const list = $('hero-results-list');
-  $('hero-results-title').textContent = `Optimization complete (${res.applied} modules applied)`;
+  $('hero-results-title').textContent = `Configuration complete (${res.applied} settings applied)`;
   $('hero-results-sub').textContent = res.requiresReboot
-    ? 'Expand any row for details. Reboot once so kernel and Bare-Metal settings activate.'
+    ? 'Expand any row for details. Restart Windows once so processor and security changes take effect.'
     : 'All applied settings are active now. Expand any row for details.';
 
   list.innerHTML = (res.results || [])
@@ -486,7 +486,7 @@ async function ensureAdmin(actionLabel) {
   if (state.audit?.isAdmin) return true;
   const ok = await confirmModal(
     'Administrator Permission Required',
-    `BareFrame starts in standard mode so logs and Pre-Match Boost open without UAC prompts. "${actionLabel}" modifies Windows settings — approve the Windows UAC prompt once for this session.`
+    `BareFrame starts in standard user mode so Statistics and Background Apps open without UAC prompts. "${actionLabel}" modifies Windows system settings — approve User Account Control once for this session.`
   );
   if (!ok) return false;
   showToast('Requesting Administrator elevation…');
@@ -496,14 +496,14 @@ async function ensureAdmin(actionLabel) {
 }
 
 $('btn-hero-optimize').onclick = async () => {
-  if (!(await ensureAdmin('Run Optimization'))) return;
+  if (!(await ensureAdmin('Apply Recommended Settings'))) return;
   const includeVbs = $('chk-hero-vbs').checked;
   const ids = state.tweaks.filter((t) => includeVbs || !t.optIn).map((t) => t.id);
 
   if (includeVbs) {
     const ok = await confirmModal(
-      'Run Full Optimization (with Bare-Metal Mode)?',
-      `BareFrame will create a System Restore Point and backups first, then apply ${ids.length} tweaks including Bare-Metal Mode (VBS/HVCI off; disables WSL2/Hyper-V while leaving TPM 2.0 and Secure Boot enabled). Continue?`
+      'Apply Recommended Configuration (with VBS Off)?',
+      `BareFrame will create a Windows System Restore Point and backups first, then apply ${ids.length} settings including disabling Virtualization-Based Security (VBS) & Memory Integrity (disables WSL2/Hyper-V while leaving TPM 2.0 and Secure Boot enabled). Continue?`
     );
     if (!ok) return;
   }
@@ -513,18 +513,18 @@ $('btn-hero-optimize').onclick = async () => {
   $('hero-progress-state').classList.remove('hidden');
   heroProgSpring.setImmediate(3);
   $('hero-progress-label').textContent = 'Creating System Restore Point & registry/config backups…';
-  resetConsole(`Running optimization (${ids.length} modules)…`);
+  resetConsole(`Applying configuration (${ids.length} settings)…`);
 
   try {
     const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
     heroProgSpring.animateTo(100);
-    $('hero-progress-label').textContent = `Completed (${res.applied} modules applied)`;
+    $('hero-progress-label').textContent = `Completed (${res.applied} settings applied)`;
     renderResultsBreakdown(res);
-    showToast(`Applied ${res.applied} modules.`);
+    showToast(`Applied ${res.applied} settings.`);
     await loadAudit();
     maybePromptTip(
-      `${res.applied} Modules Applied`,
-      'Your system has been updated with automatic backups and 1-click revert. BareFrame is free and MIT open-source — optional Ko-fi tips help cover signing and maintenance.'
+      `${res.applied} Settings Applied`,
+      'Your system has been updated with automatic backups and one-click Restore Defaults. BareFrame is free and MIT open-source — optional Ko-fi tips help cover code signing and maintenance.'
     );
   } catch (err) {
     showToast(`Error: ${err.message}`);
@@ -542,27 +542,27 @@ $('btn-results-bios').onclick = () => switchTab('throttle');
 $('btn-results-tip').onclick = () => $('btn-tip-sidebar').click();
 
 $('btn-apply-tweaks').onclick = async () => {
-  if (!(await ensureAdmin('Apply Selected Tweaks'))) return;
+  if (!(await ensureAdmin('Apply Selected Settings'))) return;
   const ids = [...state.selectedTweaks];
-  if (ids.length === 0) return showToast('Enable at least one optimization first.');
+  if (ids.length === 0) return showToast('Select at least one setting first.');
   if (ids.includes('baremetal_vbs')) {
     const ok = await confirmModal(
-      'Bare-Metal Mode Selected',
-      'Disabling VBS and Hyper-V improves CPU frame times but disables WSL2 and Docker Desktop until reverted. TPM 2.0 and Secure Boot remain enabled. Continue?'
+      'Disable VBS & Memory Integrity?',
+      'Disabling Virtualization-Based Security (VBS) and Hyper-V improves CPU frame pacing but disables WSL2 and Docker Desktop until restored. TPM 2.0 and Secure Boot remain enabled. Continue?'
     );
     if (!ok) return;
   }
-  resetConsole(`Applying ${ids.length} module(s)… creating backup & Restore Point first…`);
+  resetConsole(`Applying ${ids.length} setting(s)… creating backup & System Restore Point first…`);
   $('btn-apply-tweaks').disabled = true;
   try {
     const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
-    $('tweak-console').textContent += `\n\n[DONE] Applied ${res.applied} module(s).${res.requiresReboot ? ' Reboot recommended to activate kernel changes.' : ''}`;
+    $('tweak-console').textContent += `\n\n[DONE] Applied ${res.applied} setting(s).${res.requiresReboot ? ' Restart recommended to activate system changes.' : ''}`;
     if (res.requiresReboot) $('btn-reboot-now').classList.remove('hidden');
-    showToast(`Applied ${res.applied} modules.`);
+    showToast(`Applied ${res.applied} settings.`);
     await loadAudit();
     maybePromptTip(
-      `${res.applied} Modules Applied`,
-      'Backups and a Restore Point were saved first. BareFrame is free and open-source — optional Ko-fi tips support code signing and updates.'
+      `${res.applied} Settings Applied`,
+      'Backups and a System Restore Point were saved first. BareFrame is free and open-source — optional Ko-fi tips support code signing and updates.'
     );
   } catch (err) {
     $('tweak-console').textContent += `\n[ERROR] ${err.message}`;
@@ -573,19 +573,19 @@ $('btn-apply-tweaks').onclick = async () => {
 };
 
 $('btn-revert-all').onclick = async () => {
-  if (!(await ensureAdmin('Revert All Optimizations'))) return;
+  if (!(await ensureAdmin('Restore Defaults'))) return;
   const ok = await confirmModal(
-    'Revert All Optimizations?',
-    'Restores Windows defaults for MMCSS, kernel timers, power plan, memory compression, services, USB/Ethernet power saving, IFEO priority, and VBS/Hyper-V.'
+    'Restore Windows Defaults?',
+    'Restores default Windows settings for processor scheduling, system timers, power mode, Memory Compression, Windows services, USB/Ethernet power management, process priority, and VBS/Memory Integrity.'
   );
   if (!ok) return;
-  resetConsole('Reverting all BareFrame tweaks back to stock Windows defaults…');
+  resetConsole('Restoring all BareFrame settings back to Windows defaults…');
   $('btn-revert-all').disabled = true;
   try {
     const res = await window.frameforge.revertTweaks([], state.gameId || 'valorant');
-    $('tweak-console').textContent += `\n\n[DONE] Reverted ${res.reverted} module(s). Reboot to finalize.`;
+    $('tweak-console').textContent += `\n\n[DONE] Restored ${res.reverted} setting(s). Restart Windows to finalize.`;
     $('btn-reboot-now').classList.remove('hidden');
-    showToast('All settings reverted to Windows defaults.');
+    showToast('All settings restored to Windows defaults.');
     await loadAudit();
   } catch (err) {
     $('tweak-console').textContent += `\n[ERROR] ${err.message}`;
@@ -597,17 +597,17 @@ $('btn-revert-all').onclick = async () => {
 $('btn-reboot-now').onclick = async (e) => {
   e.preventDefault();
   e.stopPropagation();
-  const ok = await confirmModal('Reboot PC Now?', 'Windows will restart in 8 seconds so kernel and timer changes take full effect.');
+  const ok = await confirmModal('Restart PC Now?', 'Windows will restart in 8 seconds so processor and system configuration changes take full effect.');
   if (ok) {
     await window.frameforge.rebootWindows();
-    showToast('Rebooting in 8 seconds…');
+    showToast('Restarting in 8 seconds…');
   }
 };
 
-// ---------------- THROTTLE TEST & BIOS ----------------
+// ---------------- HARDWARE & UEFI ----------------
 async function loadBiosGuide(vendor, model) {
   const guide = await window.frameforge.getBiosGuide(vendor, model);
-  $('bios-card-title').textContent = `${guide.brand} BIOS Guide`;
+  $('bios-card-title').textContent = `${guide.brand} UEFI Firmware Settings`;
   $('bios-key-pill').textContent = `Key: ${guide.key}`;
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
@@ -849,29 +849,29 @@ $('btn-purge-hogs').onclick = async () => {
   const names = [...document.querySelectorAll('.hog-check:checked')].map((c) => c.dataset.name);
   if (!names.length) return showToast('No processes selected.');
   $('btn-purge-hogs').disabled = true;
-  $('btn-purge-hogs').textContent = 'Closing…';
+  $('btn-purge-hogs').textContent = 'Ending tasks…';
   try {
     const res = await window.frameforge.purgeHogs(names);
     const still = res.stillRunning || [];
     if (still.length > 0 && res.needsAdmin) {
-      showToast(`${still.join(', ')} is running elevated and needs admin to close.`, 4500);
+      showToast(`${still.join(', ')} is running elevated and requires Administrator permission to end.`, 4500);
       await loadHogs();
-      await ensureAdmin(`Close elevated apps (${still.join(', ')})`);
+      await ensureAdmin(`End elevated tasks (${still.join(', ')})`);
       return;
     }
     if (still.length > 0) {
-      showToast(`Closed ${res.closedCount} process(es), freed ${res.freedMB} MB. Still running: ${still.join(', ')}.`, 4500);
+      showToast(`Ended ${res.closedCount} process(es), freed ${res.freedMB} MB. Still active: ${still.join(', ')}.`, 4500);
     } else if (res.closedCount > 0) {
-      showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB RAM.`);
+      showToast(`Ended ${res.closedCount} process(es), freed ~${res.freedMB} MB memory.`);
     } else {
-      showToast('Selected processes were already closed.');
+      showToast('Selected processes were already ended.');
     }
     await loadHogs();
   } catch (err) {
-    showToast(`Close failed: ${err.message}`);
+    showToast(`End task failed: ${err.message}`);
   } finally {
     $('btn-purge-hogs').disabled = false;
-    $('btn-purge-hogs').textContent = 'Close Selected';
+    $('btn-purge-hogs').textContent = 'End Selected Tasks';
   }
 };
 $('btn-launch-val').onclick = async () => {
@@ -1103,11 +1103,11 @@ $('btn-update-install').onclick = triggerInstallUpdate;
 function applyGameUi() {
   const g = getActiveGame();
   $('sidebar-game-name').textContent = g.shortName;
-  $('overview-title').textContent = g.id === 'all' ? 'Overview' : g.name;
+  $('overview-title').textContent = g.id === 'all' ? 'System' : `${g.name} — System`;
   $('overview-subtitle').textContent =
-    `${g.antiCheat} safe, automatic Restore Point, and 12 tailored optimizations with one-click rollback`;
+    `${g.antiCheat} compatible, automatic System Restore Point, and 12 reversible Windows and GPU settings`;
   $('hero-cta-desc').textContent =
-    `Tailored for ${g.name}. Creates a System Restore Point and backups first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
+    `Configured for ${g.name}. Creates a Windows System Restore Point and backups first, then configures processor scheduling, system timers, power mode, USB/Ethernet power management, GPU MSI-X, Memory Compression, NVIDIA Instant Replay, and ${g.shortName} program settings (${g.tweakSummary}).`;
   $('hero-vbs-sub').textContent = g.vbsNote;
 
   const launchBtn = $('btn-launch-val');
@@ -1170,11 +1170,11 @@ function updateGamePickerSelection(animateStagger = false) {
   if (chosen) {
     confirmBtn.disabled = false;
     confirmBtn.textContent = `Continue with ${chosen.shortName}`;
-    note.textContent = `${chosen.name} selected (12 tailored optimizations ready)`;
+    note.textContent = `${chosen.name} selected (12 Windows & GPU settings ready)`;
   } else {
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Continue';
-    note.textContent = 'Select a game profile to continue.';
+    note.textContent = 'Select a program profile to continue.';
   }
 }
 
@@ -1182,7 +1182,7 @@ function openGamePicker(isFirstBoot = false) {
   const isBeta = String(currentAppVersion).startsWith('0.');
   $('game-picker-kicker').textContent = isFirstBoot
     ? (isBeta ? `BareFrame Beta (v${currentAppVersion})` : `BareFrame v${currentAppVersion}`)
-    : 'Switch game profile';
+    : 'Program settings';
   $('btn-game-picker-cancel').classList.toggle('hidden', isFirstBoot);
   if (!state.pendingGameId) {
     state.pendingGameId = state.gameId || Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
