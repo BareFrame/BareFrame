@@ -916,13 +916,22 @@ const updateBarSpring = new Spring1D(0, {
   },
 });
 
+function formatUpdateSize(info) {
+  if (info.sizeDisplay) return info.sizeDisplay;
+  if (info.sizeBytes > 0 && info.sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(info.sizeBytes / 1024))} KB`;
+  }
+  return info.sizeMB > 0 ? `${info.sizeMB} MB` : '';
+}
+
 function showBottomUpdateBar(info) {
+  const isPatch = info.updateType === 'patch';
+  const sizeTxt = formatUpdateSize(info);
   $('bottom-update-title').textContent = `BareFrame v${info.latestVersion} is ready`;
-  $('bottom-update-meta').textContent =
-    info.sizeMB > 0
-      ? `${info.sizeMB} MB (${info.assetName})`
-      : info.assetName || '';
-  $('btn-bottom-install-update').textContent = 'Install update';
+  $('bottom-update-meta').textContent = isPatch
+    ? (sizeTxt ? `${sizeTxt} patch · Instant restart` : 'Lightweight app patch')
+    : (sizeTxt ? `${sizeTxt} full installer (${info.assetName})` : info.assetName || '');
+  $('btn-bottom-install-update').textContent = isPatch ? 'Install patch' : 'Install update';
   $('btn-bottom-install-update').disabled = false;
   $('btn-bottom-update-dismiss').classList.remove('hidden');
   $('bottom-update-prog').classList.add('hidden');
@@ -966,18 +975,29 @@ async function runUpdateCheck() {
 }
 
 function openUpdateModal(info) {
+  const isPatch = info.updateType === 'patch';
+  const sizeTxt = formatUpdateSize(info);
   $('update-modal-title').textContent = `Update to BareFrame v${info.latestVersion}`;
-  $('update-modal-body').textContent = `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB full Electron installer). Downloads from GitHub Releases, installs silently, and relaunches automatically.`;
+  $('update-modal-body').textContent = isPatch
+    ? `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${sizeTxt} verified patch). Downloads only changed app files from GitHub Releases, verifies SHA-256, and restarts automatically.`
+    : `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${sizeTxt} full Electron installer). Downloads from GitHub Releases, installs silently, and relaunches automatically.`;
   $('update-progress-wrap').classList.add('hidden');
   $('btn-update-install').disabled = false;
-  $('btn-update-install').textContent = 'Download & Install';
+  $('btn-update-install').textContent = isPatch ? 'Download & Apply Patch' : 'Download & Install';
   $('update-modal-backdrop').classList.remove('hidden');
   syncModalDim();
 }
 
 window.frameforge.onUpdateProgress((p) => {
-  const speedPart = p.speedMBps > 0 && p.pct < 100 ? ` · ${p.speedMBps} MB/s` : '';
-  const sizePart = p.totalMB > 0 ? `${p.receivedMB} / ${p.totalMB} MB` : `${p.receivedMB} MB`;
+  const speedPart = p.speedMBps > 0 && p.pct < 100 && (!p.totalBytes || p.totalBytes >= 1048576)
+    ? ` · ${p.speedMBps} MB/s`
+    : '';
+  let sizePart = '';
+  if (p.receivedDisplay) {
+    sizePart = p.totalDisplay ? `${p.receivedDisplay} / ${p.totalDisplay}` : p.receivedDisplay;
+  } else {
+    sizePart = p.totalMB > 0 ? `${p.receivedMB} / ${p.totalMB} MB` : `${p.receivedMB} MB`;
+  }
   const liveTxt =
     p.pct >= 100
       ? p.status || 'Installing & restarting BareFrame…'
@@ -993,6 +1013,7 @@ window.frameforge.onUpdateProgress((p) => {
 
 async function triggerInstallUpdate() {
   if (!latestUpdateInfo || !latestUpdateInfo.downloadUrl) return;
+  const isPatch = latestUpdateInfo.updateType === 'patch';
   $('update-modal-backdrop').classList.add('hidden');
   syncModalDim();
 
@@ -1001,14 +1022,14 @@ async function triggerInstallUpdate() {
   document.body.classList.add('has-bottom-update');
   $('btn-bottom-update-dismiss').classList.add('hidden');
   $('btn-bottom-install-update').disabled = true;
-  $('btn-bottom-install-update').textContent = 'Downloading…';
+  $('btn-bottom-install-update').textContent = isPatch ? 'Patching…' : 'Downloading…';
   $('bottom-update-prog').classList.remove('hidden');
   updateBarSpring.setImmediate(0);
   $('bottom-update-pct').textContent = '0%';
   $('bottom-update-status').textContent = 'Connecting to GitHub Releases…';
 
   $('btn-update-install').disabled = true;
-  $('btn-update-install').textContent = 'Downloading…';
+  $('btn-update-install').textContent = isPatch ? 'Patching…' : 'Downloading…';
   $('update-progress-wrap').classList.remove('hidden');
   $('update-progress-pct').textContent = '0%';
   $('update-progress-text').textContent = 'Connecting to GitHub Releases…';
@@ -1019,12 +1040,17 @@ async function triggerInstallUpdate() {
       latestVersion: latestUpdateInfo.latestVersion,
       isPortable: latestUpdateInfo.isPortable,
       sizeBytes: latestUpdateInfo.sizeBytes || 0,
+      updateType: latestUpdateInfo.updateType || 'full',
+      patchSha256: latestUpdateInfo.patchSha256 || null,
+      electronMajor: latestUpdateInfo.electronMajor || 0,
     });
     updateBarSpring.animateTo(100);
     $('bottom-update-pct').textContent = '100%';
-    $('bottom-update-status').textContent = 'Installing & restarting BareFrame…';
+    $('bottom-update-status').textContent = isPatch
+      ? 'Patch applied — restarting BareFrame…'
+      : 'Installing & restarting BareFrame…';
     $('btn-bottom-install-update').textContent = 'Restarting…';
-    showToast('Installing update and restarting BareFrame…');
+    showToast(isPatch ? 'Patch applied — restarting BareFrame…' : 'Installing update and restarting BareFrame…');
   } catch (err) {
     showToast(`Update failed: ${err.message}`);
     $('btn-bottom-install-update').disabled = false;

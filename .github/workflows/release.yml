@@ -32,6 +32,9 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npx electron-builder --win --publish never
 
+      - name: Build lightweight patch package
+        run: node scripts/build-patch.js
+
       - name: Upload unsigned build artifacts (required for SignPath verification)
         id: upload_unsigned
         uses: actions/upload-artifact@v4
@@ -97,3 +100,5 @@ jobs:
           files: |
             dist/BareFrame-Setup.exe
             dist/BareFrame-Portable.exe
+            dist/BareFrame-Patch.zip
+            dist/patch-manifest.json

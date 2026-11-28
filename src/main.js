@@ -1,246 +1,141 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const { runSystemAudit } = require('./engine/audit');
-const { getTweakList, applyTweaks, revertTweaks, BACKUP_ROOT } = require('./engine/tweaks');
-const { getGameList, detectInstalledGames } = require('./engine/games');
-const { getValorantTelemetry } = require('./engine/telemetry');
-const { runThrottleTest, getBiosGuide, rebootToBios } = require('./engine/throttle');
-const { scanBackgroundHogs, purgeBackgroundHogs, launchGame } = require('./engine/boost');
-const { checkForUpdate, downloadUpdate } = require('./engine/updater');
-const { runPS } = require('./engine/ps');
-const supportConfig = require('./config/support');
-const { spawn } = require('child_process');
-
-let mainWindow = null;
-
-function createWindow() {
-  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
-  mainWindow = new BrowserWindow({
-    width: 1240,
-    height: 820,
-    minWidth: 1020,
-    minHeight: 680,
-    frame: false,
-    backgroundColor: '#0B0E14',
-    icon: fs.existsSync(iconPath) ? iconPath : undefined,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
-  });
-
-  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+function parseSemver(v) {
+  return String(v || '0.0.0')
+    .replace(/^v/i, '')
+    .split('-')[0]
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
-
-// Window controls
-ipcMain.on('win:minimize', () => mainWindow?.minimize());
-ipcMain.on('win:maximize', () => {
-  if (!mainWindow) return;
-  if (mainWindow.isMaximized()) mainWindow.unmaximize();
-  else mainWindow.maximize();
-});
-ipcMain.on('win:close', () => mainWindow?.close());
-
-// Engine IPC
-ipcMain.handle('games:list', async () => {
-  return getGameList();
-});
-
-ipcMain.handle('games:detect', async () => {
-  return detectInstalledGames();
-});
-
-ipcMain.handle('audit:run', async (_evt, gameId) => {
-  return runSystemAudit(gameId);
-});
-
-ipcMain.handle('tweaks:list', async (_evt, gameId) => {
-  return getTweakList(gameId);
-});
-
-ipcMain.handle('tweaks:apply', async (_evt, ids, gameId) => {
-  return applyTweaks(
-    ids,
-    (line) => mainWindow?.webContents.send('tweaks:log', line),
-    (prog) => mainWindow?.webContents.send('tweaks:progress', prog),
-    gameId
-  );
-});
-
-ipcMain.handle('tweaks:revert', async (_evt, ids, gameId) => {
-  return revertTweaks(ids, (line) => {
-    mainWindow?.webContents.send('tweaks:log', line);
-  }, gameId);
-});
-
-ipcMain.handle('telemetry:get', async () => {
-  return getValorantTelemetry();
-});
-
-ipcMain.handle('throttle:run', async () => {
-  return runThrottleTest((sample) => {
-    mainWindow?.webContents.send('throttle:sample', sample);
-  });
-});
-
-ipcMain.handle('bios:guide', async (_evt, vendor, model) => {
-  return getBiosGuide(vendor, model);
-});
-
-ipcMain.handle('bios:reboot', async () => {
-  return rebootToBios();
-});
-
-ipcMain.handle('system:reboot', async () => {
-  return runPS(`shutdown /r /t 8 /c "BareFrame: Rebooting to apply kernel optimizations..."`);
-});
-
-ipcMain.handle('boost:scan', async (_evt, gameId) => {
-  return scanBackgroundHogs(gameId);
-});
-
-ipcMain.handle('boost:purge', async (_evt, names) => {
-  return purgeBackgroundHogs(names);
-});
-
-ipcMain.handle('boost:launchGame', async (_evt, gameId) => {
-  return launchGame(gameId);
-});
-
-ipcMain.handle('boost:launchValorant', async () => {
-  return launchGame('valorant');
-});
-
-ipcMain.handle('backups:open', async () => {
-  fs.mkdirSync(BACKUP_ROOT, { recursive: true });
-  await shell.openPath(BACKUP_ROOT);
-  return BACKUP_ROOT;
-});
-
-ipcMain.handle('support:config', async () => {
-  return supportConfig;
-});
-
-ipcMain.handle('external:open', async (_evt, url) => {
-  if (typeof url === 'string' && /^https:\/\//i.test(url)) {
-    await shell.openExternal(url);
-    return true;
+function isNewerVersion(latest, current) {
+  const a = parseSemver(latest);
+  const b = parseSemver(current);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] || 0) > (b[i] || 0)) return true;
+    if ((a[i] || 0) < (b[i] || 0)) return false;
   }
   return false;
-});
+}
 
-ipcMain.handle('app:version', () => app.getVersion());
+function getPatchRoot() {
+  if (process.env.BAREFRAME_PATCH_ROOT) return process.env.BAREFRAME_PATCH_ROOT;
+  return path.join(process.env.LOCALAPPDATA || os.homedir(), 'BareFrame');
+}
 
-ipcMain.handle('system:relaunchAdmin', async () => {
-  const exePath = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
-  const escapedExe = exePath.replace(/'/g, "''");
-  const isDev = !app.isPackaged;
-  const argPart = isDev ? ` -ArgumentList '${process.cwd().replace(/'/g, "''")}'` : '';
-  const res = await runPS(`Start-Process -FilePath '${escapedExe}'${argPart} -Verb RunAs`, { timeoutMs: 30000 });
-  if (res.code === 0) {
-    setTimeout(() => app.quit(), 450);
-    return { ok: true };
+function cleanupOldPatches(patchesDir, keepDirName) {
+  try {
+    if (!fs.existsSync(patchesDir)) return;
+    for (const entry of fs.readdirSync(patchesDir)) {
+      if (keepDirName && entry === keepDirName) continue;
+      try {
+        fs.rmSync(path.join(patchesDir, entry), { recursive: true, force: true });
+      } catch {}
+    }
+  } catch {}
+}
+
+/**
+ * Resolve whether a verified newer patch should boot instead of bundled app-main.js.
+ * Automatically cleans up stale patches after full installer upgrades.
+ */
+function resolvePatchEntry({ bundledVersion, isPackaged, electronVersion, patchRoot }) {
+  const root = patchRoot || getPatchRoot();
+  const activeFile = path.join(root, 'active-patch.json');
+  const patchesDir = path.join(root, 'patches');
+
+  if (!isPackaged && !process.env.BAREFRAME_PATCH_ROOT) {
+    return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
   }
-  return { ok: false, error: res.stderr || 'Elevation canceled' };
-});
 
-ipcMain.handle('updater:check', async () => {
-  return checkForUpdate(app.getVersion());
-});
-
-ipcMain.handle('updater:install', async (_evt, { downloadUrl, latestVersion, isPortable, sizeBytes }) => {
-  if (!downloadUrl || !/^https:\/\/github\.com\//i.test(downloadUrl)) {
-    throw new Error('Invalid update download URL');
+  if (!fs.existsSync(activeFile)) {
+    return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
   }
-  const { path: downloadedExe } = await downloadUpdate(
-    downloadUrl,
-    latestVersion,
-    isPortable,
-    app.getVersion(),
-    (prog) => mainWindow?.webContents.send('updater:progress', { ...prog, status: 'Downloading…' }),
-    sizeBytes || 0
-  );
 
-  mainWindow?.webContents.send('updater:progress', {
-    pct: 100,
-    receivedMB: 0,
-    totalMB: 0,
-    status: 'Installing & restarting BareFrame…',
+  try {
+    const meta = JSON.parse(fs.readFileSync(activeFile, 'utf8'));
+    const patchVer = meta && meta.version ? String(meta.version) : '';
+    const dirName = meta && meta.dir ? String(meta.dir) : '';
+
+    // If bundled version is >= patch version (e.g. user ran a newer full installer), prune stale patch
+    if (!patchVer || !isNewerVersion(patchVer, bundledVersion)) {
+      try { fs.unlinkSync(activeFile); } catch {}
+      cleanupOldPatches(patchesDir, null);
+      return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+    }
+
+    // Require matching Electron major runtime
+    const currentMajor = parseInt(String(electronVersion || '0').split('.')[0], 10) || 0;
+    const patchMajor = parseInt(String(meta.electronMajor || '0'), 10) || 0;
+    if (currentMajor > 0 && patchMajor > 0 && currentMajor !== patchMajor) {
+      return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+    }
+
+    // Validate safe single folder name
+    if (!dirName || /[\\/:]/.test(dirName) || dirName.includes('..')) {
+      try { fs.unlinkSync(activeFile); } catch {}
+      return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+    }
+
+    const patchDir = path.join(patchesDir, dirName);
+    const patchPkgPath = path.join(patchDir, 'package.json');
+    const patchEntry = path.join(patchDir, 'src', 'app-main.js');
+
+    if (!fs.existsSync(patchPkgPath) || !fs.existsSync(patchEntry)) {
+      try { fs.unlinkSync(activeFile); } catch {}
+      return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+    }
+
+    const patchPkg = JSON.parse(fs.readFileSync(patchPkgPath, 'utf8'));
+    if (!patchPkg || patchPkg.version !== patchVer) {
+      try { fs.unlinkSync(activeFile); } catch {}
+      return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+    }
+
+    return {
+      mode: 'patch',
+      version: patchVer,
+      dirName,
+      patchDir,
+      patchesDir,
+      activeFile,
+      entry: patchEntry,
+    };
+  } catch {
+    try { fs.unlinkSync(activeFile); } catch {}
+    return { mode: 'bundled', entry: path.join(__dirname, 'app-main.js') };
+  }
+}
+
+function boot() {
+  const { app } = require('electron');
+  const resolved = resolvePatchEntry({
+    bundledVersion: app.getVersion(),
+    isPackaged: app.isPackaged,
+    electronVersion: process.versions.electron,
   });
 
-  const currentExe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
-  const installDir = path.dirname(currentExe);
-  const batPath = path.join(os.tmpdir(), `bareframe-update-${Date.now()}.cmd`);
-
-  let batContent;
-  if (isPortable) {
-    batContent = [
-      '@echo off',
-      'ping 127.0.0.1 -n 3 >nul',
-      'taskkill /F /IM BareFrame.exe >nul 2>&1',
-      'ping 127.0.0.1 -n 2 >nul',
-      `copy /Y "${downloadedExe}" "${currentExe}" >nul 2>&1`,
-      'if errorlevel 1 (',
-      '  ping 127.0.0.1 -n 3 >nul',
-      `  copy /Y "${downloadedExe}" "${currentExe}" >nul 2>&1`,
-      ')',
-      `if exist "${currentExe}" (`,
-      `  del /f /q "${downloadedExe}" >nul 2>&1`,
-      `  start "" "${currentExe}"`,
-      ') else (',
-      `  start "" "${downloadedExe}"`,
-      ')',
-      'del /f /q "%~f0" >nul 2>&1',
-      '',
-    ].join('\r\n');
-  } else {
-    batContent = [
-      '@echo off',
-      'ping 127.0.0.1 -n 3 >nul',
-      'taskkill /F /IM BareFrame.exe >nul 2>&1',
-      'ping 127.0.0.1 -n 2 >nul',
-      `start "" /wait "${downloadedExe}" /S /currentuser /D=${installDir}`,
-      'if errorlevel 1 (',
-      '  ping 127.0.0.1 -n 3 >nul',
-      `  start "" /wait "${downloadedExe}" /S /currentuser /D=${installDir}`,
-      ')',
-      'ping 127.0.0.1 -n 2 >nul',
-      `del /f /q "${downloadedExe}" >nul 2>&1`,
-      `if exist "${currentExe}" (`,
-      `  start "" "${currentExe}"`,
-      ') else (',
-      '  start "" "%LOCALAPPDATA%\\Programs\\BareFrame\\BareFrame.exe"',
-      ')',
-      'del /f /q "%~f0" >nul 2>&1',
-      '',
-    ].join('\r\n');
+  if (resolved.mode === 'patch') {
+    try {
+      require(resolved.entry);
+      // Clean up older superseded patch folders in background after boot
+      setTimeout(() => cleanupOldPatches(resolved.patchesDir, resolved.dirName), 4000).unref();
+      return;
+    } catch (err) {
+      // Auto-rollback corrupt patch so BareFrame always starts cleanly
+      try { fs.unlinkSync(resolved.activeFile); } catch {}
+      try { fs.rmSync(resolved.patchDir, { recursive: true, force: true }); } catch {}
+      console.error('BareFrame patch rollback triggered:', err && err.message ? err.message : err);
+    }
   }
 
-  fs.writeFileSync(batPath, batContent, 'ascii');
+  require('./app-main.js');
+}
 
-  const child = spawn('cmd.exe', ['/c', 'start', '""', '/min', `"${batPath}"`], {
-    detached: true,
-    stdio: 'ignore',
-    windowsVerbatimArguments: true,
-  });
-  child.unref();
+if (process.versions && process.versions.electron) {
+  boot();
+}
 
-  setTimeout(() => app.exit(0), 400);
-  return { launched: true, exePath: downloadedExe };
-});
+module.exports = { resolvePatchEntry, isNewerVersion, getPatchRoot, cleanupOldPatches };
