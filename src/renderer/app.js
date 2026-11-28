@@ -363,7 +363,7 @@ function renderTweaks() {
           <div class="tweak-badges">
             <span class="${impactCls}">${impactLabel[t.impact] || t.impact}</span>
             ${t.optIn ? '<span class="pill-opt">Optional</span>' : ''}
-            ${t.requiresReboot ? '<span class="pill-neutral">Restart required</span>' : ''}
+            ${t.requiresReboot ? '<span class="pill-neutral">Restart</span>' : ''}
             <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Default'}</span>
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
@@ -607,7 +607,7 @@ $('btn-reboot-now').onclick = async (e) => {
 // ---------------- HARDWARE & UEFI ----------------
 async function loadBiosGuide(vendor, model) {
   const guide = await window.frameforge.getBiosGuide(vendor, model);
-  $('bios-card-title').textContent = `${guide.brand} UEFI Firmware Settings`;
+  $('bios-card-title').textContent = `${guide.brand} BIOS Settings`;
   $('bios-key-pill').textContent = `Key: ${guide.key}`;
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
@@ -849,29 +849,29 @@ $('btn-purge-hogs').onclick = async () => {
   const names = [...document.querySelectorAll('.hog-check:checked')].map((c) => c.dataset.name);
   if (!names.length) return showToast('No processes selected.');
   $('btn-purge-hogs').disabled = true;
-  $('btn-purge-hogs').textContent = 'Ending tasks…';
+  $('btn-purge-hogs').textContent = 'Closing…';
   try {
     const res = await window.frameforge.purgeHogs(names);
     const still = res.stillRunning || [];
     if (still.length > 0 && res.needsAdmin) {
-      showToast(`${still.join(', ')} is running elevated and requires Administrator permission to end.`, 4500);
+      showToast(`${still.join(', ')} is running elevated and needs Administrator permission to close.`, 4500);
       await loadHogs();
-      await ensureAdmin(`End elevated tasks (${still.join(', ')})`);
+      await ensureAdmin(`Close elevated apps (${still.join(', ')})`);
       return;
     }
     if (still.length > 0) {
-      showToast(`Ended ${res.closedCount} process(es), freed ${res.freedMB} MB. Still active: ${still.join(', ')}.`, 4500);
+      showToast(`Closed ${res.closedCount} process(es), freed ${res.freedMB} MB. Still active: ${still.join(', ')}.`, 4500);
     } else if (res.closedCount > 0) {
-      showToast(`Ended ${res.closedCount} process(es), freed ~${res.freedMB} MB memory.`);
+      showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB memory.`);
     } else {
-      showToast('Selected processes were already ended.');
+      showToast('Selected apps were already closed.');
     }
     await loadHogs();
   } catch (err) {
-    showToast(`End task failed: ${err.message}`);
+    showToast(`Close failed: ${err.message}`);
   } finally {
     $('btn-purge-hogs').disabled = false;
-    $('btn-purge-hogs').textContent = 'End Selected Tasks';
+    $('btn-purge-hogs').textContent = 'Close Selected';
   }
 };
 $('btn-launch-val').onclick = async () => {
@@ -1103,7 +1103,7 @@ $('btn-update-install').onclick = triggerInstallUpdate;
 function applyGameUi() {
   const g = getActiveGame();
   $('sidebar-game-name').textContent = g.shortName;
-  $('overview-title').textContent = g.id === 'all' ? 'System' : `${g.name} — System`;
+  $('overview-title').textContent = g.id === 'all' ? 'Overview' : g.name;
   $('overview-subtitle').textContent =
     `${g.antiCheat} compatible, automatic System Restore Point, and 12 reversible Windows and GPU settings`;
   $('hero-cta-desc').textContent =
@@ -1182,7 +1182,7 @@ function openGamePicker(isFirstBoot = false) {
   const isBeta = String(currentAppVersion).startsWith('0.');
   $('game-picker-kicker').textContent = isFirstBoot
     ? (isBeta ? `BareFrame Beta (v${currentAppVersion})` : `BareFrame v${currentAppVersion}`)
-    : 'Program settings';
+    : 'Game profile';
   $('btn-game-picker-cancel').classList.toggle('hidden', isFirstBoot);
   if (!state.pendingGameId) {
     state.pendingGameId = state.gameId || Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';

@@ -86,10 +86,10 @@ function rubberband(overshoot, dimension, constant = 0.55) {
 const TWEAKS_DATA = [
   {
     id: 'mmcss_scheduler',
-    name: 'Processor Scheduling & Multimedia Class Scheduler (MMCSS)',
+    name: 'Game Thread Scheduling',
     category: 'System & Processor',
     filterGroup: 'Kernel & CPU',
-    reboot: 'Restart required',
+    reboot: 'Restart',
     opt: false,
     log: '[OK] MMCSS Games=High/Priority 6, SystemResponsiveness=0, Win32PrioritySeparation=0x26',
     desc: 'Raises Multimedia Class Scheduler priority for active games and tightens foreground thread quantum allocation for consistent frame delivery.',
@@ -98,10 +98,10 @@ const TWEAKS_DATA = [
   },
   {
     id: 'kernel_timer',
-    name: 'System Timer Resolution & Power Throttling',
+    name: 'System Timer & Power Throttling',
     category: 'System & Processor',
     filterGroup: 'Kernel & CPU',
-    reboot: 'Restart required',
+    reboot: 'Restart',
     opt: false,
     log: '[OK] GlobalTimerRes=1, PowerThrottlingOff=1, DisablePagingExecutive=1, DynamicTick=Off',
     desc: 'Stabilizes Windows 11 timer resolution across processes, disables Power Throttling, keeps kernel pages in physical memory on 16 GB+ PCs, and disables dynamic tick on desktops (skipped on laptops).',
@@ -110,7 +110,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'power_plan',
-    name: 'Power Mode & Processor Core Parking',
+    name: 'High Performance Power Plan',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
     reboot: 'Instant',
@@ -122,7 +122,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'usb_power',
-    name: 'USB Selective Suspend & HID Power Management',
+    name: 'USB Power Management',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
     reboot: 'Instant',
@@ -134,10 +134,10 @@ const TWEAKS_DATA = [
   },
   {
     id: 'gpu_msi',
-    name: 'GPU Message Signaled Interrupts (MSI-X)',
+    name: 'GPU Interrupt Mode (MSI-X)',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
-    reboot: 'Restart required',
+    reboot: 'Restart',
     opt: false,
     log: '[OK] Enabled MSI-X & High Interrupt Priority on 2 GPU PCIe device(s)',
     desc: 'Detects your NVIDIA (VEN_10DE) or AMD (VEN_1002) PCIe GPU and GPU audio controller, ensuring Message Signaled Interrupts (MSI-X) and High interrupt priority are enabled.',
@@ -146,7 +146,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'ethernet_latency',
-    name: 'Ethernet Adapter Power Saving & Interrupt Moderation',
+    name: 'Ethernet Low-Latency Mode',
     category: 'Network & Memory',
     filterGroup: 'Network & Memory',
     reboot: 'Instant',
@@ -158,10 +158,10 @@ const TWEAKS_DATA = [
   },
   {
     id: 'memory_services',
-    name: 'Memory Compression, SysMain & Diagnostic Telemetry',
+    name: 'Memory & Background Services',
     category: 'Network & Memory',
     filterGroup: 'Network & Memory',
-    reboot: 'Restart required',
+    reboot: 'Restart',
     opt: false,
     log: '[OK] Memory Compression OFF, SysMain/DiagTrack/WerSvc disabled, DeliveryOpt OFF, NTFS tuned',
     desc: 'Turns off Memory Compression on 16 GB+ PCs, disables SysMain, DiagTrack, WerSvc, and CEIP scheduled tasks, stops P2P Delivery Optimization uploads, and reduces NTFS last-access writes.',
@@ -170,7 +170,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'defender_exclusions',
-    name: 'Windows Security Folder Exclusions',
+    name: 'Windows Security Exclusions',
     category: 'Program Settings',
     filterGroup: 'Network & Memory',
     reboot: 'Instant',
@@ -182,7 +182,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'user_gaming',
-    name: 'Windows Game Mode, Game Bar Capture & Process Priority',
+    name: 'Game Mode & CPU Priority',
     category: 'Program Settings',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Instant',
@@ -194,7 +194,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'game_config',
-    name: 'Program Display & Graphics Configuration',
+    name: 'Game Display & Config',
     category: 'Program Settings',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Instant',
@@ -206,7 +206,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'nvidia_shadowplay',
-    name: 'NVIDIA Instant Replay Background Capture',
+    name: 'NVIDIA Instant Replay',
     category: 'Graphics & Overlay',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Instant',
@@ -218,10 +218,10 @@ const TWEAKS_DATA = [
   },
   {
     id: 'baremetal_vbs',
-    name: 'Virtualization-Based Security (VBS) & Memory Integrity',
+    name: 'Memory Integrity & VBS',
     category: 'Windows Security (Optional)',
     filterGroup: 'Gaming & Opt-In',
-    reboot: 'Restart required',
+    reboot: 'Restart',
     opt: true,
     log: '[OK] VBS=0 & hypervisorlaunchtype=Off (Restart required)',
     desc: 'Optional setting that disables Windows Virtualization-Based Security (VBS), Memory Integrity (HVCI), and Hyper-V launch (+10–18% CPU FPS in DX11 titles). Leaves TPM 2.0 and Secure Boot enabled. Disables WSL2/Docker while off.',
