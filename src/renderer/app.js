@@ -632,7 +632,7 @@ function renderThrottleChart(samples, isLive = false) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#6B788E" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#6B788E" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
       <polyline fill="none" stroke="#1B56B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
@@ -641,8 +641,8 @@ function renderThrottleChart(samples, isLive = false) {
         .map(
           (s) => `
         <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#F96A1B" stroke="#1B2330" stroke-width="1.5"/>
-        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F4F6FA" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
-        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6B788E" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
+        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F4F6FA" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
+        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6B788E" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
         )
         .join('')}
     </svg>`;
@@ -760,7 +760,7 @@ function renderTelemetry(data) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yFps(v)}" x2="${W - padR}" y2="${yFps(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#6D7689" font-family="'JetBrains Mono',Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
       ${sessions
@@ -772,9 +772,9 @@ function renderTelemetry(data) {
           return `
             <rect class="chart-bar-anim" style="animation-delay:${i * 35}ms" x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
                   fill="${isLast ? '#1B56B8' : 'rgba(249,106,27,0.78)'}" />
-            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#5C95EB' : '#F2F5FA'}" font-family="Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
-            <text x="${cx}" y="${H - 15}" fill="#6B788E" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
-            <text x="${cx}" y="${H - 3}" fill="#96A3B8" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
+            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#5C95EB' : '#F2F5FA'}" font-family="'JetBrains Mono',Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
+            <text x="${cx}" y="${H - 15}" fill="#6B788E" font-family="'JetBrains Mono',Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
+            <text x="${cx}" y="${H - 3}" fill="#96A3B8" font-family="'JetBrains Mono',Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
         })
         .join('')}
     </svg>`;
