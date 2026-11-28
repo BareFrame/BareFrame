@@ -801,8 +801,8 @@ async function loadHogs() {
             <span class="switch-track"><span class="switch-thumb"></span></span>
           </span>
           <div>
-            <div style="font-weight:600">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}</div>
-            <div style="font-size:11.5px;color:#6D7689">${h.count} process(es)</div>
+            <div style="font-weight:600">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (disable in app)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}${h.needsAdmin ? '<span class="pill-opt">Needs admin</span>' : ''}</div>
+            <div style="font-size:11.5px;color:#6B788E">${h.count} process(es)</div>
           </div>
         </div>
         <div class="boost-meta">
@@ -821,9 +821,31 @@ $('btn-scan-hogs').onclick = loadHogs;
 $('btn-purge-hogs').onclick = async () => {
   const names = [...document.querySelectorAll('.hog-check:checked')].map((c) => c.dataset.name);
   if (!names.length) return showToast('No processes selected.');
-  const res = await window.frameforge.purgeHogs(names);
-  showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB RAM.`);
-  await loadHogs();
+  $('btn-purge-hogs').disabled = true;
+  $('btn-purge-hogs').textContent = 'Closing…';
+  try {
+    const res = await window.frameforge.purgeHogs(names);
+    const still = res.stillRunning || [];
+    if (still.length > 0 && res.needsAdmin) {
+      showToast(`${still.join(', ')} is running elevated and needs admin to close.`, 4500);
+      await loadHogs();
+      await ensureAdmin(`Close elevated apps (${still.join(', ')})`);
+      return;
+    }
+    if (still.length > 0) {
+      showToast(`Closed ${res.closedCount} process(es), freed ${res.freedMB} MB. Still running: ${still.join(', ')}.`, 4500);
+    } else if (res.closedCount > 0) {
+      showToast(`Closed ${res.closedCount} process(es), freed ~${res.freedMB} MB RAM.`);
+    } else {
+      showToast('Selected processes were already closed.');
+    }
+    await loadHogs();
+  } catch (err) {
+    showToast(`Close failed: ${err.message}`);
+  } finally {
+    $('btn-purge-hogs').disabled = false;
+    $('btn-purge-hogs').textContent = 'Close Selected';
+  }
 };
 $('btn-launch-val').onclick = async () => {
   const g = getActiveGame();

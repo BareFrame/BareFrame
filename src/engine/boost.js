@@ -7,8 +7,8 @@ const HOG_NAMES = [
   'firefox',
   'opera',
   'brave',
-  'EpicWebHelper',
   'EpicGamesLauncher',
+  'EpicWebHelper',
   'SnippingTool',
   'CrossDeviceService',
   'CrossDeviceResume',
@@ -24,23 +24,35 @@ const HOG_NAMES = [
   'Blitz',
 ];
 
+// Always terminate parent launchers before helper children so parents cannot respawn helpers
+const HELPER_CHILDREN = new Set(['EpicWebHelper', 'CrossDeviceService', 'CrossDeviceResume']);
+
 async function scanBackgroundHogs(gameId = 'valorant') {
   const profile = getGameProfile(gameId);
   const keepSet = new Set(profile.keepProcesses || []);
   const listStr = HOG_NAMES.map((n) => `'${n}'`).join(',');
   const script = `
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     $names = @(${listStr})
     $found = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $names -contains $_.Name } | Group-Object Name | ForEach-Object {
+      $anyInaccessible = $false
+      if (-not $isAdmin) {
+        foreach ($p in $_.Group) {
+          try { if (-not $p.Path) { $anyInaccessible = $true; break } } catch { $anyInaccessible = $true; break }
+        }
+      }
       [PSCustomObject]@{
         name = $_.Name
         count = $_.Count
         mb = [math]::Round(($_.Group | Measure-Object WorkingSet64 -Sum).Sum / 1MB, 1)
         cpuSec = [math]::Round(($_.Group | Measure-Object CPU -Sum).Sum, 1)
         isOverlay = ($_.Name -match 'NVIDIA Overlay|PresentMon|Overwolf')
+        needsAdmin = $anyInaccessible
       }
     } | Sort-Object mb -Descending)
     $os = Get-CimInstance Win32_OperatingSystem
     [PSCustomObject]@{
+      isAdmin = $isAdmin
       freeRamGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
       totalRamGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
       hogs = $found
@@ -57,22 +69,79 @@ async function scanBackgroundHogs(gameId = 'valorant') {
 
 async function purgeBackgroundHogs(selectedNames) {
   const safeList = (selectedNames || []).filter((n) => HOG_NAMES.includes(n));
-  if (safeList.length === 0) return { closedCount: 0, freedMB: 0 };
-  const listStr = safeList.map((n) => `'${n}'`).join(',');
+  if (safeList.length === 0) {
+    return { closedCount: 0, freedMB: 0, stillRunning: [], needsAdmin: false };
+  }
+
+  // Sort parents before helper children (e.g. EpicGamesLauncher before EpicWebHelper)
+  const parents = safeList.filter((n) => !HELPER_CHILDREN.has(n));
+  const children = safeList.filter((n) => HELPER_CHILDREN.has(n));
+  const ordered = [...parents, ...children];
+  const parentStr = parents.map((n) => `'${n}'`).join(',');
+  const childStr = children.map((n) => `'${n}'`).join(',');
+  const allStr = ordered.map((n) => `'${n}'`).join(',');
+
   const script = `
-    $targets = @(${listStr})
-    $freed = 0.0; $closed = 0
-    foreach ($t in $targets) {
-      $procs = @(Get-Process -Name $t -ErrorAction SilentlyContinue)
-      if ($procs.Count -gt 0) {
-        $freed += ($procs | Measure-Object WorkingSet64 -Sum).Sum / 1MB
-        $procs | Stop-Process -Force -ErrorAction SilentlyContinue
-        $closed += $procs.Count
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $allTargets = @(${allStr})
+    $parentTargets = @(${parentStr})
+    $childTargets = @(${childStr})
+
+    # Snapshot before
+    $beforeCount = 0
+    $beforeMB = 0.0
+    foreach ($t in $allTargets) {
+      $ps = @(Get-Process -Name $t -ErrorAction SilentlyContinue)
+      $beforeCount += $ps.Count
+      if ($ps.Count -gt 0) {
+        $beforeMB += ($ps | Measure-Object WorkingSet64 -Sum).Sum / 1MB
       }
     }
-    [PSCustomObject]@{ closedCount = $closed; freedMB = [math]::Round($freed, 1) } | ConvertTo-Json -Compress
+
+    function Kill-Target($name) {
+      & taskkill.exe /F /T /IM "$name.exe" 2>$null | Out-Null
+      $rem = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+      if ($rem.Count -gt 0) {
+        $rem | Stop-Process -Force -ErrorAction SilentlyContinue
+      }
+    }
+
+    foreach ($t in $parentTargets) { Kill-Target $t }
+    if ($parentTargets.Count -gt 0 -and $childTargets.Count -gt 0) {
+      Start-Sleep -Milliseconds 300
+    }
+    foreach ($t in $childTargets) { Kill-Target $t }
+
+    Start-Sleep -Milliseconds 350
+
+    # Verify which processes actually exited vs survived
+    $afterCount = 0
+    $afterMB = 0.0
+    $still = @()
+    foreach ($t in $allTargets) {
+      $ps = @(Get-Process -Name $t -ErrorAction SilentlyContinue)
+      if ($ps.Count -gt 0) {
+        $afterCount += $ps.Count
+        $afterMB += ($ps | Measure-Object WorkingSet64 -Sum).Sum / 1MB
+        $still += $t
+      }
+    }
+
+    $closed = [math]::Max(0, $beforeCount - $afterCount)
+    $freed = [math]::Max(0.0, $beforeMB - $afterMB)
+    [PSCustomObject]@{
+      isAdmin = $isAdmin
+      closedCount = $closed
+      freedMB = [math]::Round($freed, 1)
+      stillRunning = $still
+      needsAdmin = ((-not $isAdmin) -and ($still.Count -gt 0))
+    } | ConvertTo-Json -Depth 3 -Compress
   `;
-  return runPSJson(script, { timeoutMs: 15000 });
+  const res = await runPSJson(script, { timeoutMs: 20000 });
+  res.stillRunning = Array.isArray(res.stillRunning)
+    ? res.stillRunning
+    : (res.stillRunning ? [res.stillRunning] : []);
+  return res;
 }
 
 async function launchGame(gameId = 'valorant') {
