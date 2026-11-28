@@ -25,13 +25,17 @@
 
       <nav class="nav" id="primary-nav" aria-label="Primary">
         <div class="nav-hover-pill" id="nav-hover-pill" aria-hidden="true"></div>
-        <a href="#telemetry" class="nav-link">Benchmarks</a>
-        <a href="#changes" class="nav-link">What changes</a>
-        <a href="#questions" class="nav-link">Questions</a>
+        <div class="nav-active-dot" id="nav-active-dot" aria-hidden="true"></div>
+        <a href="#telemetry" class="nav-link" data-section="telemetry">Benchmarks</a>
+        <a href="#changes" class="nav-link" data-section="changes">What changes</a>
+        <a href="#questions" class="nav-link" data-section="questions">Questions</a>
         <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener" class="nav-link">GitHub</a>
         <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="nav-link nav-kofi">Ko-fi</a>
         <a href="#download" class="nav-download">Download</a>
       </nav>
+    </div>
+    <div class="scroll-progress-rail" aria-hidden="true">
+      <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
     </div>
   </header>
 
@@ -122,15 +126,19 @@
             <button id="btn-run-dry" type="button" class="btn-inline">Run dry-run log</button>
           </div>
 
-          <div id="dry-run-drawer" class="dry-run-drawer hidden">
-            <div class="dry-run-bar-row">
-              <span id="demo-progress-text">Preparing backup…</span>
-              <span id="demo-progress-pct" class="mono tabular">0%</span>
+          <div id="dry-run-collapse" class="dry-run-collapse">
+            <div class="dry-run-collapse-inner">
+              <div id="dry-run-drawer" class="dry-run-drawer">
+                <div class="dry-run-bar-row">
+                  <span id="demo-progress-text">Preparing backup…</span>
+                  <span id="demo-progress-pct" class="mono tabular">0%</span>
+                </div>
+                <div class="dry-run-rail">
+                  <div id="demo-progress-bar" class="dry-run-fill"></div>
+                </div>
+                <pre id="demo-console" class="dry-run-console mono"></pre>
+              </div>
             </div>
-            <div class="dry-run-rail">
-              <div id="demo-progress-bar" class="dry-run-fill"></div>
-            </div>
-            <pre id="demo-console" class="dry-run-console mono"></pre>
           </div>
         </div>
       </div>
@@ -194,6 +202,13 @@
           <div class="scrubber-track" id="scrubber-track" role="slider" tabindex="0" aria-label="Optimization stage" aria-valuemin="0" aria-valuemax="4" aria-valuenow="4">
             <div class="scrubber-rail"></div>
             <div class="scrubber-fill" id="scrubber-fill"></div>
+            <div class="scrubber-detents" id="scrubber-detents" aria-hidden="true">
+              <span class="detent-dot active"></span>
+              <span class="detent-dot active"></span>
+              <span class="detent-dot active"></span>
+              <span class="detent-dot active"></span>
+              <span class="detent-dot active"></span>
+            </div>
             <div class="scrubber-knob" id="scrubber-knob" aria-hidden="true"></div>
             <div class="scrubber-labels">
               <button type="button" class="stage-stop" data-stage="0">Stock</button>
@@ -218,6 +233,7 @@
             </p>
           </div>
           <div class="filter-group" id="tweak-filters" role="group" aria-label="Filter optimizations">
+            <div class="filter-pill" id="filter-pill" aria-hidden="true"></div>
             <button type="button" class="filter-chip active" data-cat="all">All (12)</button>
             <button type="button" class="filter-chip" data-cat="Kernel & CPU">Kernel &amp; CPU</button>
             <button type="button" class="filter-chip" data-cat="Power & Hardware">Power &amp; hardware</button>

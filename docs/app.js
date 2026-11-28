@@ -231,18 +231,72 @@ const TWEAKS_DATA = [
 ];
 
 /* --------------------------------------------------------------------------
-   2. Top Bar Scroll Awareness + Spring-Gliding Nav Hover Pill
+   2. Top Bar Scroll Awareness + Scroll Progress Hairline + Nav Hover/Spy Pill
    -------------------------------------------------------------------------- */
 const topbar = document.getElementById('topbar');
+const scrollProgBar = document.getElementById('scroll-progress-bar');
+const scrollProgSpring = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.18,
+  onUpdate: (pct) => {
+    scrollProgBar.style.width = `${Math.max(0, Math.min(100, pct)).toFixed(2)}%`;
+  },
+});
+
+const primaryNav = document.getElementById('primary-nav');
+const navHoverPill = document.getElementById('nav-hover-pill');
+const navActiveDot = document.getElementById('nav-active-dot');
+const navLinks = [...primaryNav.querySelectorAll('.nav-link')];
+const sectionLinks = navLinks.filter((l) => l.dataset.section);
+
+const navDotX = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.28,
+  onUpdate: (x) => {
+    navActiveDot.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+  },
+});
+
 function syncTopbar() {
   topbar.classList.toggle('scrolled', window.scrollY > 10);
+  const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  scrollProgSpring.animateTo((window.scrollY / maxScroll) * 100);
+
+  // Scroll-spy active section underline dot
+  let activeLink = null;
+  const probeY = window.scrollY + window.innerHeight * 0.34;
+  for (const link of sectionLinks) {
+    const sec = document.getElementById(link.dataset.section);
+    if (sec && sec.offsetTop <= probeY && sec.offsetTop + sec.offsetHeight > probeY) {
+      activeLink = link;
+    }
+  }
+  sectionLinks.forEach((l) => l.classList.toggle('is-current', l === activeLink));
+  if (activeLink) {
+    const cx = activeLink.offsetLeft + activeLink.offsetWidth / 2 - 7;
+    navDotX.animateTo(cx);
+    navActiveDot.style.opacity = '1';
+  } else {
+    navActiveDot.style.opacity = '0';
+  }
 }
 window.addEventListener('scroll', syncTopbar, { passive: true });
 syncTopbar();
 
-const primaryNav = document.getElementById('primary-nav');
-const navHoverPill = document.getElementById('nav-hover-pill');
-const navLinks = [...primaryNav.querySelectorAll('.nav-link')];
+// Subtle magnetic micro-pull (±3px) on primary/cobalt CTA buttons
+if (!prefersReducedMotion()) {
+  document.querySelectorAll('.btn-primary, .btn-cobalt').forEach((btn) => {
+    btn.addEventListener('pointermove', (e) => {
+      const r = btn.getBoundingClientRect();
+      const dx = ((e.clientX - (r.left + r.width / 2)) / (r.width / 2)) * 3;
+      const dy = ((e.clientY - (r.top + r.height / 2)) / (r.height / 2)) * 2;
+      btn.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0)`;
+    });
+    btn.addEventListener('pointerleave', () => {
+      btn.style.transform = '';
+    });
+  });
+}
 const navPillX = new Spring1D(0, {
   damping: 1.0,
   response: 0.24,
@@ -372,12 +426,19 @@ traceButtons.forEach((b) => {
 vbsChk.addEventListener('change', () => vbsBlendSpring.animateTo(vbsChk.checked ? 1 : 0));
 requestAnimationFrame(() => selectTraceMode('tuned', true));
 
-// Interactive pointer crosshair inside frametime trace
+// Interactive pointer crosshair + click ripple inside frametime trace
 let hoverNormX = null;
+const clickRipples = [];
 canvas.addEventListener('pointermove', (e) => {
   const rect = canvas.getBoundingClientRect();
   hoverNormX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   if (prefersReducedMotion()) drawTraceFrame(0);
+});
+canvas.addEventListener('pointerdown', (e) => {
+  if (prefersReducedMotion()) return;
+  const rect = canvas.getBoundingClientRect();
+  const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  clickRipples.push({ normX, start: performance.now() });
 });
 canvas.addEventListener('pointerleave', () => {
   hoverNormX = null;
@@ -494,6 +555,26 @@ function drawTraceFrame(phase) {
   ctx.fillStyle = '#ffffff';
   ctx.fill();
 
+  // Decaying inspection click ripples
+  const nowTs = performance.now();
+  for (let ri = clickRipples.length - 1; ri >= 0; ri--) {
+    const rip = clickRipples[ri];
+    const age = (nowTs - rip.start) / 560;
+    if (age >= 1) {
+      clickRipples.splice(ri, 1);
+      continue;
+    }
+    const eased = 1 - Math.pow(1 - age, 3);
+    const rx = rip.normX * w;
+    const rms = sampleStockMs(rip.normX * (SAMPLES - 1), phase) * (1 - blendVal) + sampleTunedMs(rip.normX * (SAMPLES - 1), phase) * blendVal;
+    const ry = msToY(rms);
+    ctx.beginPath();
+    ctx.arc(rx, ry, 5 + eased * 24, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${(1 - age) * 0.7})`;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+
   // Interactive hover crosshair & floating frametime readout
   if (hoverNormX !== null) {
     const idx = hoverNormX * (SAMPLES - 1);
@@ -555,7 +636,7 @@ if (prefersReducedMotion()) {
    4. Dry-Run PowerShell Log Drawer
    -------------------------------------------------------------------------- */
 const btnDryRun = document.getElementById('btn-run-dry');
-const dryDrawer = document.getElementById('dry-run-drawer');
+const dryCollapse = document.getElementById('dry-run-collapse');
 const demoProgBar = document.getElementById('demo-progress-bar');
 const demoProgText = document.getElementById('demo-progress-text');
 const demoProgPct = document.getElementById('demo-progress-pct');
@@ -575,7 +656,7 @@ let dryTimer = null;
 btnDryRun.addEventListener('click', () => {
   clearInterval(dryTimer);
   const steps = vbsChk.checked ? TWEAKS_DATA : TWEAKS_DATA.filter((t) => !t.opt);
-  dryDrawer.classList.remove('hidden');
+  dryCollapse.classList.add('is-open');
   btnDryRun.disabled = true;
   btnDryRun.textContent = 'Running…';
   demoConsole.textContent = '[BACKUP] Checkpoint-Computer "BareFrame Before Optimize"\n[BACKUP] Exported mmcss.reg, priority.reg, deviceguard.reg, game configs';
@@ -658,8 +739,8 @@ function selectBenchView(btn, immediate = false) {
   const rows = BENCH_TABLES[btn.dataset.view];
   compareTbody.innerHTML = rows
     .map(
-      (r) => `
-      <tr>
+      (r, idx) => `
+      <tr style="animation-delay:${idx * 32}ms">
         <td class="col-metric">${r.metric}</td>
         <td class="col-before">${r.before}</td>
         <td class="col-after">${r.after}</td>
@@ -700,6 +781,7 @@ const sFps = document.getElementById('scrubber-fps');
 const sCap = document.getElementById('scrubber-caption');
 const sDelta = document.getElementById('scrubber-delta');
 const stopBtns = [...track.querySelectorAll('.stage-stop')];
+const detentDots = [...document.querySelectorAll('#scrubber-detents .detent-dot')];
 
 let stageIdx = 4;
 const stageSpring = new Spring1D(0.9, {
@@ -709,6 +791,7 @@ const stageSpring = new Spring1D(0.9, {
     const pct = norm * 100;
     knob.style.left = `${pct}%`;
     fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    detentDots.forEach((d, i) => d.classList.toggle('active', norm >= stageNorm(i) - 0.02));
   },
 });
 
@@ -723,6 +806,7 @@ const stageFpsSpring = new Spring1D(298, {
 const stageNorm = (i) => (i + 0.5) / STAGES.length;
 
 function applyStage(idx, immediate = false) {
+  const changed = idx !== stageIdx;
   stageIdx = idx;
   const st = STAGES[idx];
   if (immediate) stageFpsSpring.setImmediate(st.fps);
@@ -730,6 +814,11 @@ function applyStage(idx, immediate = false) {
   sCap.textContent = st.cap;
   sDelta.textContent = st.delta;
   sDelta.classList.toggle('baseline', st.baseline);
+  if (changed && !immediate) {
+    sDelta.classList.remove('is-pop');
+    void sDelta.offsetWidth;
+    sDelta.classList.add('is-pop');
+  }
   track.setAttribute('aria-valuenow', String(idx));
   stopBtns.forEach((b, i) => b.classList.toggle('active', i === idx));
 }
@@ -821,12 +910,44 @@ track.addEventListener('keydown', (e) => {
 });
 
 /* --------------------------------------------------------------------------
-   7. Filterable 12-Tweak Accordion
+   7. Filterable 12-Tweak Accordion (Spring Filter Pill + Command Copy)
    -------------------------------------------------------------------------- */
 const manifestRowsEl = document.getElementById('manifest-rows');
-const filterChips = [...document.querySelectorAll('#tweak-filters .filter-chip')];
+const filterGroup = document.getElementById('tweak-filters');
+const filterPill = document.getElementById('filter-pill');
+const filterChips = [...filterGroup.querySelectorAll('.filter-chip')];
 let activeFilter = 'all';
 const openRows = new Set(['mmcss_scheduler']);
+
+const filterPillX = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.26,
+  onUpdate: (x) => {
+    filterPill.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+  },
+});
+const filterPillW = new Spring1D(64, {
+  damping: 1.0,
+  response: 0.26,
+  onUpdate: (w) => {
+    filterPill.style.width = `${w.toFixed(2)}px`;
+  },
+});
+
+function positionFilterPill(chip, immediate = false) {
+  if (!chip || !filterPill) return;
+  const x = chip.offsetLeft - 4;
+  const w = chip.offsetWidth;
+  filterPill.style.top = `${chip.offsetTop}px`;
+  filterPill.style.height = `${chip.offsetHeight}px`;
+  if (immediate) {
+    filterPillX.setImmediate(x);
+    filterPillW.setImmediate(w);
+  } else {
+    filterPillX.animateTo(x);
+    filterPillW.animateTo(w);
+  }
+}
 
 function renderManifest() {
   const list = activeFilter === 'all'
@@ -834,10 +955,10 @@ function renderManifest() {
     : TWEAKS_DATA.filter((t) => t.filterGroup === activeFilter);
 
   manifestRowsEl.innerHTML = list
-    .map((t) => {
+    .map((t, idx) => {
       const open = openRows.has(t.id);
       return `
-        <div class="manifest-row ${open ? 'is-open' : ''}" data-row-id="${t.id}">
+        <div class="manifest-row ${open ? 'is-open' : ''}" data-row-id="${t.id}" style="animation:rowFadeIn 220ms cubic-bezier(0.22,1,0.36,1) ${idx * 18}ms both">
           <button type="button" class="manifest-trigger" data-tweak-id="${t.id}" aria-expanded="${open}">
             <span class="m-title">${t.name}</span>
             <span class="m-cat">${t.category}</span>
@@ -855,7 +976,10 @@ function renderManifest() {
                   <p>${t.revert}</p>
                 </div>
                 <div>
-                  <h4>Exact Windows targets</h4>
+                  <div class="manifest-code-head">
+                    <h4>Exact Windows targets</h4>
+                    <button type="button" class="copy-cmd-btn" data-copy-id="${t.id}">Copy</button>
+                  </div>
                   <pre class="manifest-code mono">${t.commands}</pre>
                 </div>
               </div>
@@ -877,14 +1001,74 @@ function renderManifest() {
       btn.querySelector('.m-sign').textContent = willOpen ? '−' : '+';
     });
   });
+
+  manifestRowsEl.querySelectorAll('.copy-cmd-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tweak = TWEAKS_DATA.find((x) => x.id === btn.dataset.copyId);
+      if (!tweak) return;
+      try {
+        await navigator.clipboard.writeText(tweak.commands);
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        clearTimeout(btn._t);
+        btn._t = setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1600);
+      } catch {}
+    });
+  });
 }
 
 filterChips.forEach((chip) => {
-  chip.addEventListener('click', () => {
+  chip.addEventListener('pointerdown', () => {
     activeFilter = chip.dataset.cat;
     filterChips.forEach((c) => c.classList.toggle('active', c === chip));
+    positionFilterPill(chip);
     renderManifest();
   });
 });
 
+window.addEventListener('resize', () => {
+  const activeChip = filterGroup.querySelector('.filter-chip.active');
+  if (activeChip) positionFilterPill(activeChip, true);
+});
+
 renderManifest();
+requestAnimationFrame(() => positionFilterPill(filterChips[0], true));
+
+/* --------------------------------------------------------------------------
+   8. Smooth Animated FAQ <details> Disclosure
+   -------------------------------------------------------------------------- */
+if (!prefersReducedMotion()) {
+  document.querySelectorAll('.faq-item').forEach((details) => {
+    const summary = details.querySelector('summary');
+    const content = details.querySelector('p');
+    if (!summary || !content) return;
+    summary.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (details.open) {
+        const anim = content.animate(
+          [
+            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.25rem' },
+            { opacity: 0, maxHeight: '0px', marginBottom: '0px' },
+          ],
+          { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+        anim.onfinish = () => {
+          details.open = false;
+        };
+      } else {
+        details.open = true;
+        content.animate(
+          [
+            { opacity: 0, maxHeight: '0px', marginBottom: '0px' },
+            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.25rem' },
+          ],
+          { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+      }
+    });
+  });
+}
