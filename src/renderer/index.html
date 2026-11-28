@@ -16,10 +16,10 @@
       </div>
       <span class="brand-name">BareFrame</span>
       <span id="app-beta-pill" class="beta-pill">Beta</span>
-      <span id="app-version-pill" class="version-pill">v0.1.13</span>
+      <span id="app-version-pill" class="version-pill">v0.1.14</span>
     </div>
     <div class="titlebar-right">
-      <button id="btn-update-pill" class="update-pill hidden" type="button">Update Available</button>
+      <button id="btn-update-pill" class="update-pill hidden" type="button">Update available</button>
       <div id="admin-badge" class="admin-badge">Checking…</div>
       <div class="win-controls">
         <button id="btn-min" class="win-btn" title="Minimize">&#x2014;</button>
@@ -85,15 +85,15 @@
             <svg class="nav-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="6 4 16 10 6 16 6 4" />
             </svg>
-            <span>Background Apps</span>
+            <span>Background apps</span>
           </button>
         </nav>
       </div>
 
       <div class="sidebar-footer">
-        <div class="vanguard-pill">Compatible with Vanguard, FACEIT &amp; EAC</div>
+        <div class="vanguard-pill">Works with Vanguard, FACEIT &amp; EAC</div>
         <button id="btn-tip-sidebar" class="btn-tip btn-sm">Support on Ko-fi</button>
-        <button id="btn-open-backups" class="btn-ghost btn-sm">Backup Folder</button>
+        <button id="btn-open-backups" class="btn-ghost btn-sm">Backup folder</button>
       </div>
     </aside>
 
@@ -108,7 +108,7 @@
           </div>
           <div class="header-actions">
             <button id="btn-rescan" class="btn-secondary">Refresh</button>
-            <button id="btn-quick-opt" class="btn-ghost">View Settings</button>
+            <button id="btn-quick-opt" class="btn-ghost">View settings</button>
           </div>
         </div>
 
@@ -116,7 +116,7 @@
         <div class="card hero-opt-card">
           <div class="hero-opt-left">
             <div>
-              <div class="score-kicker">System Status</div>
+              <div class="score-kicker">System status</div>
               <div class="score-readout-row">
                 <span id="score-num" class="score-num">--</span>
                 <span class="score-denom">/100</span>
@@ -140,7 +140,7 @@
               <label class="hero-vbs-toggle" for="chk-hero-vbs">
                 <div>
                   <div class="hero-vbs-title-row">
-                    <strong>Disable Memory Integrity &amp; VBS</strong>
+                    <strong>Turn off Memory Integrity (VBS)</strong>
                     <span class="pill-opt">+10–18% CPU FPS</span>
                   </div>
                   <div id="hero-vbs-sub" class="hero-vbs-sub">Keeps TPM 2.0 &amp; Secure Boot on. Pauses WSL2/Hyper-V until restored.</div>
@@ -151,8 +151,8 @@
                 </span>
               </label>
               <div class="hero-btn-row">
-                <button id="btn-hero-optimize" class="btn-hero-big">Apply Recommended</button>
-                <button id="btn-hero-revert" class="btn-danger-outline">Restore Defaults</button>
+                <button id="btn-hero-optimize" class="btn-hero-big">Apply recommended</button>
+                <button id="btn-hero-revert" class="btn-danger-outline">Restore defaults</button>
               </div>
             </div>
 
@@ -174,39 +174,39 @@
         <div id="hero-results-card" class="card results-card hidden">
           <div class="card-header-row">
             <div>
-              <div class="card-title" id="hero-results-title">Configuration Complete</div>
+              <div class="card-title" id="hero-results-title">Settings applied</div>
               <div class="subtitle" id="hero-results-sub">All selected settings applied with backups saved.</div>
             </div>
             <div class="header-actions">
-              <button id="btn-results-bios" class="btn-secondary btn-sm">BIOS Guide</button>
+              <button id="btn-results-bios" class="btn-secondary btn-sm">BIOS guide</button>
               <button id="btn-results-tip" class="btn-tip btn-sm">Support</button>
-              <button id="btn-results-reboot" class="btn-primary btn-sm">Restart Now</button>
+              <button id="btn-results-reboot" class="btn-primary btn-sm">Restart now</button>
             </div>
           </div>
           <div id="hero-results-list" class="results-list"></div>
         </div>
 
-        <!-- System Information -->
+        <!-- System information -->
         <div class="card">
-          <div class="card-title">System Information</div>
+          <div class="card-title">System information</div>
           <div class="hw-grid" id="hw-grid">
             <div class="hw-item"><span class="hw-k">CPU</span><span class="hw-v" id="hw-cpu">Detecting…</span></div>
             <div class="hw-item"><span class="hw-k">GPU</span><span class="hw-v" id="hw-gpu">Detecting…</span></div>
             <div class="hw-item"><span class="hw-k">Memory</span><span class="hw-v" id="hw-ram">Detecting…</span></div>
             <div class="hw-item"><span class="hw-k">Motherboard</span><span class="hw-v" id="hw-board">Detecting…</span></div>
             <div class="hw-item"><span class="hw-k">Display &amp; ReBAR</span><span class="hw-v" id="hw-disp">Detecting…</span></div>
-            <div class="hw-item"><span class="hw-k">Power, Network &amp; VBS</span><span class="hw-v" id="hw-sys">Detecting…</span></div>
+            <div class="hw-item"><span class="hw-k">Power, network &amp; VBS</span><span class="hw-v" id="hw-sys">Detecting…</span></div>
           </div>
         </div>
 
-        <!-- System Recommendations -->
+        <!-- Recommendations -->
         <div class="card">
           <div class="card-header-row">
-            <div class="card-title">System Recommendations</div>
+            <div class="card-title">Recommendations</div>
             <span id="bottleneck-count" class="pill-neutral">Checking…</span>
           </div>
           <div id="bottlenecks-list" class="bottlenecks-list">
-            <div class="empty-state">Checking Windows and hardware configuration…</div>
+            <div class="empty-state">Checking Windows and hardware settings…</div>
           </div>
         </div>
       </section>
@@ -216,11 +216,11 @@
         <div class="panel-header">
           <div>
             <h1>Performance</h1>
-            <p class="subtitle">Creates a Windows System Restore Point and registry backups automatically before applying changes</p>
+            <p class="subtitle">Creates a System Restore Point and registry backups automatically before applying</p>
           </div>
           <div class="header-actions">
             <button id="btn-select-safe" class="btn-ghost">Recommended (11)</button>
-            <button id="btn-revert-all" class="btn-danger-outline">Restore Defaults</button>
+            <button id="btn-revert-all" class="btn-danger-outline">Restore defaults</button>
             <button id="btn-apply-tweaks" class="btn-primary">Apply</button>
           </div>
         </div>
@@ -230,15 +230,15 @@
         <details id="console-details" class="card console-details">
           <summary class="console-summary">
             <div class="console-summary-left">
-              <span class="card-title">Activity Log</span>
+              <span class="card-title">Activity log</span>
               <span id="console-count-pill" class="pill-neutral">Ready</span>
             </div>
             <div class="console-summary-right">
-              <button id="btn-reboot-now" type="button" class="btn-secondary btn-sm hidden">Restart Now</button>
+              <button id="btn-reboot-now" type="button" class="btn-secondary btn-sm hidden">Restart now</button>
               <span class="expand-symbol" aria-hidden="true"></span>
             </div>
           </summary>
-          <pre id="tweak-console" class="console-out">Ready. Select settings above and click "Apply".</pre>
+          <pre id="tweak-console" class="console-out">Ready. Turn on the settings you want above, then select Apply.</pre>
         </details>
       </section>
 
@@ -247,10 +247,10 @@
         <div class="panel-header">
           <div>
             <h1>CPU &amp; BIOS</h1>
-            <p class="subtitle">35-second sustained load test to detect 65W PL1 power limits or thermal throttling past the 28s boost window</p>
+            <p class="subtitle">35-second sustained load test to spot 65W PL1 power limits or thermal throttling past the 28s boost window</p>
           </div>
           <div class="header-actions">
-            <button id="btn-run-throttle" class="btn-primary">Run 35s Clock Test</button>
+            <button id="btn-run-throttle" class="btn-primary">Run 35s clock test</button>
             <button id="btn-reboot-bios" class="btn-secondary">Restart to BIOS</button>
           </div>
         </div>
@@ -258,8 +258,8 @@
         <div class="two-col">
           <div class="card">
             <div class="card-header-row">
-              <div class="card-title">Sustained CPU Clock (MHz)</div>
-              <span id="throttle-verdict-pill" class="pill-neutral">Not Run</span>
+              <div class="card-title">Sustained CPU clock (MHz)</div>
+              <span id="throttle-verdict-pill" class="pill-neutral">Not run</span>
             </div>
             <div id="throttle-chart-wrap" class="chart-wrap">
               <div class="empty-state">Run the 35s clock test to compare boost vs. sustained CPU clock speed.</div>
@@ -269,10 +269,10 @@
 
           <div class="card">
             <div class="card-header-row">
-              <div class="card-title" id="bios-card-title">Motherboard BIOS Settings</div>
+              <div class="card-title" id="bios-card-title">Motherboard BIOS settings</div>
               <span id="bios-key-pill" class="pill-blue">Del / F2</span>
             </div>
-            <p class="muted-note">BIOS settings cannot be written from Windows, and kernel MSR drivers are blocked by anti-cheat systems. Recommended settings for your board:</p>
+            <p class="muted-note">BIOS settings cannot be changed from Windows, and kernel MSR drivers are blocked by anti-cheat systems. Recommended settings for your board:</p>
             <ol id="bios-steps" class="bios-steps"></ol>
           </div>
         </div>
@@ -283,7 +283,7 @@
         <div class="panel-header">
           <div>
             <h1>Statistics</h1>
-            <p id="telemetry-subtitle" class="subtitle">Reads local VALORANT ShooterGame*.log performance telemetry directly on this PC</p>
+            <p id="telemetry-subtitle" class="subtitle">Reads local VALORANT ShooterGame*.log files directly on this PC</p>
           </div>
           <div class="header-actions">
             <button id="btn-refresh-telemetry" class="btn-secondary">Refresh</button>
@@ -302,14 +302,14 @@
 
         <div class="card">
           <div class="card-header-row">
-            <div class="card-title">Session Frame Rate &amp; 240 Hz Compliance</div>
+            <div class="card-title">Session frame rate &amp; 240 Hz compliance</div>
             <span id="telemetry-bottleneck-pill" class="pill-neutral">—</span>
           </div>
           <div id="telemetry-chart-wrap" class="chart-wrap"></div>
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:10px;">Recorded Sessions</div>
+          <div class="card-title" style="margin-bottom:10px;">Recorded sessions</div>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
@@ -317,12 +317,12 @@
                   <th>Session</th>
                   <th>Mode</th>
                   <th>Avg FPS</th>
-                  <th>Frame Time</th>
+                  <th>Frame time</th>
                   <th>&lt;240 FPS</th>
                   <th>&gt;240 FPS</th>
-                  <th>&gt;480 Frames</th>
-                  <th>Render Lat.</th>
-                  <th>GPU Time</th>
+                  <th>&gt;480 frames</th>
+                  <th>Render lat.</th>
+                  <th>GPU time</th>
                   <th>Limiter</th>
                 </tr>
               </thead>
@@ -336,35 +336,35 @@
       <section id="tab-boost" class="tab-panel">
         <div class="panel-header">
           <div>
-            <h1>Background Apps</h1>
+            <h1>Background apps</h1>
             <p class="subtitle">Close unnecessary background apps to free memory and CPU cycles before playing</p>
           </div>
           <div class="header-actions">
             <button id="btn-scan-hogs" class="btn-secondary">Refresh</button>
-            <button id="btn-purge-hogs" class="btn-primary">Close Selected</button>
-            <button id="btn-launch-val" class="btn-blue-solid">Launch Game</button>
+            <button id="btn-purge-hogs" class="btn-primary">Close selected</button>
+            <button id="btn-launch-val" class="btn-blue-solid">Launch game</button>
           </div>
         </div>
 
         <div class="kpi-row">
           <div class="kpi-card">
-            <div class="kpi-label">Available Memory</div>
+            <div class="kpi-label">Available memory</div>
             <div class="kpi-val" id="boost-free-ram">-- GB</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Running Apps</div>
+            <div class="kpi-label">Running apps</div>
             <div class="kpi-val" id="boost-hog-count">--</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Memory in Use</div>
+            <div class="kpi-label">Memory in use</div>
             <div class="kpi-val accent-blue" id="boost-reclaim-mb">-- MB</div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:10px;">Active Background Apps</div>
+          <div class="card-title" style="margin-bottom:10px;">Running background apps</div>
           <div id="boost-list" class="boost-list">
-            <div class="empty-state">Scanning background apps…</div>
+            <div class="empty-state">Checking running apps…</div>
           </div>
         </div>
       </section>
@@ -375,10 +375,10 @@
   <div id="game-picker-overlay" class="game-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="game-picker-title">
     <div class="game-picker-inner">
       <div class="game-picker-head">
-        <div id="game-picker-kicker" class="game-picker-kicker">BareFrame Beta (v0.1.13)</div>
+        <div id="game-picker-kicker" class="game-picker-kicker">BareFrame Beta (v0.1.14)</div>
         <h1 id="game-picker-title">Choose a game profile</h1>
         <p class="game-picker-sub">
-          BareFrame tailors CPU priority, Windows Security exclusions, display config, and Background Apps protection for your selected game. You can switch anytime from the sidebar.
+          BareFrame tailors CPU priority, Windows Security exclusions, display settings, and Background apps protection for your selected game. You can switch anytime from the sidebar.
         </p>
       </div>
 

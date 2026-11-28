@@ -248,7 +248,7 @@ function buildTweaks(gameId = 'valorant') {
   return [
     {
       id: 'mmcss_scheduler',
-      name: 'Game Thread Scheduling',
+      name: 'Game thread scheduling',
       category: 'System & Processor',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
@@ -280,7 +280,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'kernel_timer',
-      name: 'System Timer & Power Throttling',
+      name: 'System timer & power throttling',
       category: 'System & Processor',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
@@ -312,7 +312,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'power_plan',
-      name: 'High Performance Power Plan',
+      name: 'High performance power plan',
       category: 'Power & Hardware',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
@@ -350,7 +350,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'usb_power',
-      name: 'USB Power Management',
+      name: 'USB power management',
       category: 'Power & Hardware',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
@@ -374,7 +374,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'gpu_msi',
-      name: 'GPU Interrupt Mode (MSI-X)',
+      name: 'GPU interrupt mode (MSI-X)',
       category: 'Power & Hardware',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
@@ -409,7 +409,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'ethernet_latency',
-      name: 'Ethernet Low-Latency Mode',
+      name: 'Ethernet low-latency mode',
       category: 'Network & Memory',
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
@@ -446,7 +446,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'memory_services',
-      name: 'Memory & Background Services',
+      name: 'Memory & background services',
       category: 'Network & Memory',
       impact: 'HIGH',
       safety: 'Anti-Cheat Safe',
@@ -493,7 +493,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'defender_exclusions',
-      name: `Windows Security Exclusions (${profile.shortName})`,
+      name: `Windows Security exclusions (${profile.shortName})`,
       category: `Program · ${profile.shortName}`,
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
@@ -525,7 +525,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'user_gaming',
-      name: `Game Mode & CPU Priority (${profile.shortName})`,
+      name: `Game Mode & CPU priority (${profile.shortName})`,
       category: `Program · ${profile.shortName}`,
       impact: 'MED',
       safety: 'Anti-Cheat Safe',
@@ -591,7 +591,7 @@ function buildTweaks(gameId = 'valorant') {
     },
     {
       id: 'baremetal_vbs',
-      name: 'Memory Integrity & VBS',
+      name: 'Memory Integrity (VBS)',
       category: 'Windows Security (Optional)',
       impact: 'VERY HIGH',
       safety: 'Optional: Disables WSL2/Hyper-V',

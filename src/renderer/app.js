@@ -305,11 +305,11 @@ function renderAudit(d) {
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
     const g = getActiveGame();
-    countPill.textContent = 'Up to date';
+    countPill.textContent = 'All set';
     countPill.className = 'pill-blue';
-    list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">All evaluated Windows, hardware, and ${g.shortName} settings are configured.</div>`;
+    list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">Everything looks good for ${g.shortName}.</div>`;
   } else {
-    countPill.textContent = `${d.bottlenecks.length} recommended`;
+    countPill.textContent = `${d.bottlenecks.length} available`;
     countPill.className = 'pill-red';
     const sevLabel = { HIGH: 'High', MED: 'Medium', LOW: 'Low' };
     list.innerHTML = d.bottlenecks
@@ -485,25 +485,25 @@ function renderResultsBreakdown(res) {
 async function ensureAdmin(actionLabel) {
   if (state.audit?.isAdmin) return true;
   const ok = await confirmModal(
-    'Administrator Permission Required',
-    `BareFrame starts in standard user mode so Statistics and Background Apps open without UAC prompts. "${actionLabel}" modifies Windows system settings — approve User Account Control once for this session.`
+    'Administrator permission needed',
+    `BareFrame runs in standard mode so Statistics and Background apps open without prompts. "${actionLabel}" changes Windows system settings — approve Windows User Account Control once for this session.`
   );
   if (!ok) return false;
-  showToast('Requesting Administrator elevation…');
+  showToast('Requesting Administrator permission…');
   const res = await window.frameforge.relaunchAsAdmin();
-  if (!res.ok) showToast('Elevation canceled.');
+  if (!res.ok) showToast('Permission canceled.');
   return false;
 }
 
 $('btn-hero-optimize').onclick = async () => {
-  if (!(await ensureAdmin('Apply Recommended Settings'))) return;
+  if (!(await ensureAdmin('Apply recommended settings'))) return;
   const includeVbs = $('chk-hero-vbs').checked;
   const ids = state.tweaks.filter((t) => includeVbs || !t.optIn).map((t) => t.id);
 
   if (includeVbs) {
     const ok = await confirmModal(
-      'Apply Recommended Configuration (with VBS Off)?',
-      `BareFrame will create a Windows System Restore Point and backups first, then apply ${ids.length} settings including disabling Virtualization-Based Security (VBS) & Memory Integrity (disables WSL2/Hyper-V while leaving TPM 2.0 and Secure Boot enabled). Continue?`
+      'Apply recommended settings and turn off VBS?',
+      `BareFrame will create a System Restore Point and backups first, then apply ${ids.length} settings including turning off Memory Integrity (VBS). WSL2 and Hyper-V will pause until restored; TPM 2.0 and Secure Boot stay on.`
     );
     if (!ok) return;
   }
@@ -542,13 +542,13 @@ $('btn-results-bios').onclick = () => switchTab('throttle');
 $('btn-results-tip').onclick = () => $('btn-tip-sidebar').click();
 
 $('btn-apply-tweaks').onclick = async () => {
-  if (!(await ensureAdmin('Apply Selected Settings'))) return;
+  if (!(await ensureAdmin('Apply selected settings'))) return;
   const ids = [...state.selectedTweaks];
-  if (ids.length === 0) return showToast('Select at least one setting first.');
+  if (ids.length === 0) return showToast('Turn on at least one setting first.');
   if (ids.includes('baremetal_vbs')) {
     const ok = await confirmModal(
-      'Disable VBS & Memory Integrity?',
-      'Disabling Virtualization-Based Security (VBS) and Hyper-V improves CPU frame pacing but disables WSL2 and Docker Desktop until restored. TPM 2.0 and Secure Boot remain enabled. Continue?'
+      'Turn off Memory Integrity (VBS)?',
+      'Turning off VBS and Hyper-V improves CPU frame pacing, but pauses WSL2 and Docker Desktop until restored. TPM 2.0 and Secure Boot stay on.'
     );
     if (!ok) return;
   }
@@ -573,10 +573,10 @@ $('btn-apply-tweaks').onclick = async () => {
 };
 
 $('btn-revert-all').onclick = async () => {
-  if (!(await ensureAdmin('Restore Defaults'))) return;
+  if (!(await ensureAdmin('Restore defaults'))) return;
   const ok = await confirmModal(
-    'Restore Windows Defaults?',
-    'Restores default Windows settings for processor scheduling, system timers, power mode, Memory Compression, Windows services, USB/Ethernet power management, process priority, and VBS/Memory Integrity.'
+    'Restore defaults?',
+    'Restores Windows defaults for thread scheduling, system timers, power plan, Memory Compression, background services, USB/Ethernet power management, CPU priority, and Memory Integrity (VBS).'
   );
   if (!ok) return;
   resetConsole('Restoring all BareFrame settings back to Windows defaults…');
@@ -597,7 +597,7 @@ $('btn-revert-all').onclick = async () => {
 $('btn-reboot-now').onclick = async (e) => {
   e.preventDefault();
   e.stopPropagation();
-  const ok = await confirmModal('Restart PC Now?', 'Windows will restart in 8 seconds so processor and system configuration changes take full effect.');
+  const ok = await confirmModal('Restart now?', 'Windows will restart in 8 seconds so your changes take full effect.');
   if (ok) {
     await window.frameforge.rebootWindows();
     showToast('Restarting in 8 seconds…');
@@ -607,7 +607,7 @@ $('btn-reboot-now').onclick = async (e) => {
 // ---------------- HARDWARE & UEFI ----------------
 async function loadBiosGuide(vendor, model) {
   const guide = await window.frameforge.getBiosGuide(vendor, model);
-  $('bios-card-title').textContent = `${guide.brand} BIOS Settings`;
+  $('bios-card-title').textContent = `${guide.brand} BIOS settings`;
   $('bios-key-pill').textContent = `Key: ${guide.key}`;
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
@@ -814,7 +814,7 @@ async function loadHogs() {
 
     const list = $('boost-list');
     if (!state.hogs.length) {
-      list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">No heavy background apps detected.</div>`;
+      list.innerHTML = `<div class="empty-state" style="color:#5C95EB;">No background apps to close.</div>`;
       return;
     }
 
@@ -871,7 +871,7 @@ $('btn-purge-hogs').onclick = async () => {
     showToast(`Close failed: ${err.message}`);
   } finally {
     $('btn-purge-hogs').disabled = false;
-    $('btn-purge-hogs').textContent = 'Close Selected';
+    $('btn-purge-hogs').textContent = 'Close selected';
   }
 };
 $('btn-launch-val').onclick = async () => {

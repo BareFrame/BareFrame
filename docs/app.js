@@ -86,7 +86,7 @@ function rubberband(overshoot, dimension, constant = 0.55) {
 const TWEAKS_DATA = [
   {
     id: 'mmcss_scheduler',
-    name: 'Game Thread Scheduling',
+    name: 'Game thread scheduling',
     category: 'System & Processor',
     filterGroup: 'Kernel & CPU',
     reboot: 'Restart',
@@ -98,7 +98,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'kernel_timer',
-    name: 'System Timer & Power Throttling',
+    name: 'System timer & power throttling',
     category: 'System & Processor',
     filterGroup: 'Kernel & CPU',
     reboot: 'Restart',
@@ -110,7 +110,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'power_plan',
-    name: 'High Performance Power Plan',
+    name: 'High performance power plan',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
     reboot: 'Instant',
@@ -122,7 +122,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'usb_power',
-    name: 'USB Power Management',
+    name: 'USB power management',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
     reboot: 'Instant',
@@ -134,7 +134,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'gpu_msi',
-    name: 'GPU Interrupt Mode (MSI-X)',
+    name: 'GPU interrupt mode (MSI-X)',
     category: 'Power & Hardware',
     filterGroup: 'Power & Hardware',
     reboot: 'Restart',
@@ -146,7 +146,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'ethernet_latency',
-    name: 'Ethernet Low-Latency Mode',
+    name: 'Ethernet low-latency mode',
     category: 'Network & Memory',
     filterGroup: 'Network & Memory',
     reboot: 'Instant',
@@ -158,7 +158,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'memory_services',
-    name: 'Memory & Background Services',
+    name: 'Memory & background services',
     category: 'Network & Memory',
     filterGroup: 'Network & Memory',
     reboot: 'Restart',
@@ -170,7 +170,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'defender_exclusions',
-    name: 'Windows Security Exclusions',
+    name: 'Windows Security exclusions',
     category: 'Program Settings',
     filterGroup: 'Network & Memory',
     reboot: 'Instant',
@@ -182,7 +182,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'user_gaming',
-    name: 'Game Mode & CPU Priority',
+    name: 'Game Mode & CPU priority',
     category: 'Program Settings',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Instant',
@@ -194,7 +194,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'game_config',
-    name: 'Game Display & Config',
+    name: 'Game display & config',
     category: 'Program Settings',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Instant',
@@ -218,7 +218,7 @@ const TWEAKS_DATA = [
   },
   {
     id: 'baremetal_vbs',
-    name: 'Memory Integrity & VBS',
+    name: 'Memory Integrity (VBS)',
     category: 'Windows Security (Optional)',
     filterGroup: 'Gaming & Opt-In',
     reboot: 'Restart',
