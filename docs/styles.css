@@ -1,7 +1,7 @@
 /* ==========================================================================
-   BareFrame Web — Designed with Anthropic frontend-design + Apple Fluid Craft
+   BareFrame Web — Orange & Blue Theme (Deep Slate-Navy + Signal Orange + Cobalt)
    Palette: Deep Slate-Navy (#0F141D), Machined Slate (#161D29),
-            BareFrame Crimson (#E5324B), Calibration Cobalt (#2B7FFF)
+            Signal Orange (#F96A1B), Calibration Cobalt (#2B7FFF)
    No ALL-CAPS eyebrows, no middle-dot spam, no generic bento cards, zero green.
    ========================================================================== */
 
@@ -20,9 +20,10 @@
   --muted: #96a3b8;
   --subtle: #6b788e;
 
-  --crimson: #e5324b;
-  --crimson-hover: #f2435b;
-  --crimson-soft: rgba(229, 50, 75, 0.15);
+  --accent: #f96a1b;
+  --accent-hover: #ff7e36;
+  --accent-light: #ffa46b;
+  --accent-soft: rgba(249, 106, 27, 0.16);
 
   --cobalt: #2b7fff;
   --cobalt-hover: #4590ff;
@@ -202,7 +203,7 @@ code {
   margin-left: 0.45rem;
   padding: 0.5rem 1.05rem;
   border-radius: 9px;
-  background: var(--crimson);
+  background: var(--accent);
   color: #fff !important;
   font-weight: 600;
   font-size: 0.88rem;
@@ -210,7 +211,7 @@ code {
   transition: background-color 140ms ease, transform 90ms ease-out;
 }
 
-.nav-download:hover { background: var(--crimson-hover); }
+.nav-download:hover { background: var(--accent-hover); }
 .nav-download:active { transform: scale(0.97); }
 
 /* --------------------------------------------------------------------------
@@ -231,11 +232,11 @@ code {
 .btn:active { transform: scale(0.97); }
 
 .btn-primary {
-  background: var(--crimson);
+  background: var(--accent);
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.28);
 }
-.btn-primary:hover { background: var(--crimson-hover); }
+.btn-primary:hover { background: var(--accent-hover); }
 
 .btn-cobalt {
   background: var(--cobalt);
@@ -561,7 +562,7 @@ code {
   height: 100%;
   width: 0%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--crimson), var(--cobalt));
+  background: linear-gradient(90deg, var(--accent), var(--cobalt));
 }
 
 .dry-run-console {
@@ -714,7 +715,7 @@ code {
 .compare-table .col-before { color: var(--muted); }
 .compare-table .col-after { font-weight: 600; color: var(--paper); }
 .compare-table .col-delta { font-weight: 700; color: var(--cobalt-light); }
-.compare-table .col-delta.crimson { color: var(--crimson); }
+.compare-table .col-delta.crimson { color: var(--accent-light); }
 
 /* Stage Slider */
 .stage-box {
@@ -775,8 +776,8 @@ code {
 }
 
 .stage-delta.baseline {
-  background: var(--crimson-soft);
-  color: #ff859d;
+  background: var(--accent-soft);
+  color: var(--accent-light);
 }
 
 .scrubber-track {
@@ -803,7 +804,7 @@ code {
   top: 0.72rem;
   height: 5px;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--crimson), var(--cobalt));
+  background: linear-gradient(90deg, var(--accent), var(--cobalt));
   pointer-events: none;
 }
 
@@ -900,7 +901,7 @@ code {
 .m-cat { font-size: 0.84rem; color: var(--muted); }
 .m-reboot { font-size: 0.84rem; color: var(--subtle); }
 .m-kind { font-size: 0.82rem; font-weight: 600; color: var(--cobalt-light); }
-.m-kind.opt { color: #ff859d; }
+.m-kind.opt { color: var(--accent-light); }
 .m-sign {
   font-size: 1.15rem;
   color: var(--subtle);

@@ -350,8 +350,8 @@ function updateTraceReadouts() {
   traceFpsEl.textContent = `${fps} FPS`;
   traceDipsEl.textContent = `${dips}%`;
   traceLatEl.textContent = `${lat} ms`;
-  traceFpsEl.style.color = blendVal > 0.5 ? '#6cb2ff' : '#ff859d';
-  traceDipsEl.style.color = blendVal > 0.5 ? '#f4f6fa' : '#e5324b';
+  traceFpsEl.style.color = blendVal > 0.5 ? '#6cb2ff' : '#ffa46b';
+  traceDipsEl.style.color = blendVal > 0.5 ? '#f4f6fa' : '#f96a1b';
 }
 
 function selectTraceMode(mode, immediate = false) {
@@ -450,15 +450,15 @@ function drawTraceFrame(phase) {
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(229, 50, 75, ${(0.22 * blendVal).toFixed(3)})`;
+    ctx.strokeStyle = `rgba(249, 106, 27, ${(0.24 * blendVal).toFixed(3)})`;
     ctx.lineWidth = 1.4;
     ctx.stroke();
   }
 
-  // Primary blended waveform
-  const r = Math.round(229 + (43 - 229) * blendVal);
-  const g = Math.round(50 + (127 - 50) * blendVal);
-  const b = Math.round(75 + (255 - 75) * blendVal);
+  // Primary blended waveform (Signal Orange -> Calibration Cobalt)
+  const r = Math.round(249 + (43 - 249) * blendVal);
+  const g = Math.round(106 + (127 - 106) * blendVal);
+  const b = Math.round(27 + (255 - 27) * blendVal);
   const lineColor = `rgb(${r}, ${g}, ${b})`;
 
   let lastX = 0;

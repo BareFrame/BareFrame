@@ -5,7 +5,7 @@
    - Concentric radii (14px cards / 9px controls / 6px tags)
    - Instant pointer-down tactile feedback (§1)
    - Optical typography: size-specific tracking & leading (§15)
-   - Restrained BareFrame Red (#FF375F) + Apple Blue (#0A84FF), zero green
+   - Restrained Signal Orange (#F96A1B) + Calibration Cobalt (#2B7FFF), zero green
    - Full reduced-motion & reduced-transparency support (§14)
    ========================================================================== */
 
@@ -32,10 +32,10 @@
   --blue-fill: rgba(43, 127, 255, 0.16);
   --blue-border: rgba(108, 178, 255, 0.36);
 
-  --red: #e5324b;
-  --red-hover: #f2435b;
-  --red-fill: rgba(229, 50, 75, 0.15);
-  --red-border: rgba(229, 50, 75, 0.36);
+  --red: #f96a1b;
+  --red-hover: #ff7e36;
+  --red-fill: rgba(249, 106, 27, 0.16);
+  --red-border: rgba(249, 106, 27, 0.38);
 
   --r-card: 14px;
   --r-control: 9px;
@@ -192,11 +192,11 @@ body.modal-active .app-shell {
 
 .admin-badge.no-admin {
   background: var(--red-fill);
-  color: #ff859d;
+  color: #ffa46b;
 }
 
 .admin-badge.no-admin:hover {
-  background: rgba(255, 55, 95, 0.22);
+  background: rgba(249, 106, 27, 0.26);
 }
 
 .admin-badge.no-admin:active {
@@ -730,10 +730,10 @@ body.has-bottom-update .toast {
 
 .btn-danger-outline {
   background: var(--red-fill);
-  color: #ff859d;
+  color: #ffa46b;
 }
 .btn-danger-outline:hover:not(:disabled) {
-  background: rgba(255, 55, 95, 0.22);
+  background: rgba(249, 106, 27, 0.26);
   color: #fff;
 }
 
@@ -851,8 +851,8 @@ body.has-bottom-update .toast {
 
 .pill-neutral { background: rgba(255, 255, 255, 0.065); color: var(--label-secondary); }
 .pill-blue { background: var(--blue-fill); color: var(--blue-text); }
-.pill-red { background: var(--red-fill); color: #ff859d; }
-.pill-opt { background: rgba(255, 55, 95, 0.12); color: #ff99ae; }
+.pill-red { background: var(--red-fill); color: #ffa46b; }
+.pill-opt { background: rgba(249, 106, 27, 0.14); color: #ffb382; }
 
 /* --------------------------------------------------------------------------
    Overview Readiness & Primary Action Surface

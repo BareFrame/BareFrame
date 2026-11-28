@@ -235,7 +235,7 @@ const scoreSpring = new Spring1D(0, {
     scoreEl.textContent = String(rounded);
     scoreEl.className = `score-num ${rounded >= 80 ? 'is-good' : rounded < 55 ? 'is-low' : ''}`.trim();
     barFill.style.width = `${clamped.toFixed(1)}%`;
-    barFill.style.background = rounded >= 80 ? '#2B7FFF' : rounded >= 55 ? '#6CB2FF' : '#E5324B';
+    barFill.style.background = rounded >= 80 ? '#2B7FFF' : rounded >= 55 ? '#6CB2FF' : '#F96A1B';
   },
 });
 
@@ -609,11 +609,11 @@ function renderThrottleChart(samples, isLive = false) {
         )
         .join('')}
       <polyline fill="none" stroke="#2B7FFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
-      ${isLive && lastSample ? `<circle class="live-sample-ring" cx="${xOf(lastSample.sec)}" cy="${yOf(lastSample.avgMHz)}" r="5" fill="none" stroke="#E5324B" stroke-width="1.5"/>` : ''}
+      ${isLive && lastSample ? `<circle class="live-sample-ring" cx="${xOf(lastSample.sec)}" cy="${yOf(lastSample.avgMHz)}" r="5" fill="none" stroke="#F96A1B" stroke-width="1.5"/>` : ''}
       ${samples
         .map(
           (s) => `
-        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#E5324B" stroke="#0F141D" stroke-width="1.5"/>
+        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#F96A1B" stroke="#0F141D" stroke-width="1.5"/>
         <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F4F6FA" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
         <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6B788E" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
         )
@@ -744,7 +744,7 @@ function renderTelemetry(data) {
           const isLast = i === sessions.length - 1;
           return `
             <rect class="chart-bar-anim" style="animation-delay:${i * 35}ms" x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
-                  fill="${isLast ? '#2B7FFF' : 'rgba(229,50,75,0.72)'}" />
+                  fill="${isLast ? '#2B7FFF' : 'rgba(249,106,27,0.78)'}" />
             <text x="${cx}" y="${top - 7}" fill="${isLast ? '#6CB2FF' : '#F4F6FA'}" font-family="Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
             <text x="${cx}" y="${H - 15}" fill="#6B788E" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
             <text x="${cx}" y="${H - 3}" fill="#96A3B8" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
