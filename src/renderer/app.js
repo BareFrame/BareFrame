@@ -395,12 +395,39 @@ function renderTweaks() {
   });
 }
 
+function triggerSwitchTween(inputEl) {
+  const sw = inputEl && inputEl.closest('.apple-switch');
+  if (!sw || prefersReducedMotion()) return;
+  sw.classList.remove('tween-on', 'tween-off');
+  void sw.offsetWidth;
+  sw.classList.add(inputEl.checked ? 'tween-on' : 'tween-off');
+  clearTimeout(sw._tweenTimer);
+  sw._tweenTimer = setTimeout(() => sw.classList.remove('tween-on', 'tween-off'), 380);
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.matches('.apple-switch input[type="checkbox"]')) {
+    triggerSwitchTween(e.target);
+  }
+});
+
 $('btn-select-safe').onclick = () => {
   state.selectedTweaks.clear();
   state.tweaks.forEach((t) => {
     if (!t.optIn) state.selectedTweaks.add(t.id);
   });
-  renderTweaks();
+  const checks = document.querySelectorAll('#tweaks-list .tweak-check');
+  if (checks.length) {
+    checks.forEach((chk) => {
+      const shouldCheck = state.selectedTweaks.has(chk.dataset.id);
+      if (chk.checked !== shouldCheck) {
+        chk.checked = shouldCheck;
+        triggerSwitchTween(chk);
+      }
+    });
+  } else {
+    renderTweaks();
+  }
 };
 
 let consoleLineCount = 0;

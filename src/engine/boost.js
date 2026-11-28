@@ -19,7 +19,6 @@ const HOG_CATALOG = {
   'Riot Client': { label: 'Riot Client UI', category: 'Launcher', defaultCheck: true },
   RiotClientUx: { label: 'Riot Client UI', category: 'Launcher', defaultCheck: true },
   RiotClientUxRender: { label: 'Riot Client Renderer', category: 'Launcher', defaultCheck: true, isChild: true },
-  RiotClientServices: { label: 'Riot Client Services', category: 'Launcher', defaultCheck: true },
   EpicGamesLauncher: { label: 'Epic Games Launcher', category: 'Launcher', defaultCheck: true },
   EpicWebHelper: { label: 'Epic Web Helper', category: 'Launcher', defaultCheck: true, isChild: true },
   steam: { label: 'Steam', category: 'Launcher', defaultCheck: true },
@@ -116,7 +115,6 @@ async function scanBackgroundHogs(gameId = 'valorant') {
     $names = @(${listStr})
     $found = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
       ($names -contains $_.Name) -and
-      (-not (($_.Name -eq 'RiotClientServices') -and $valRunning)) -and
       (-not (Is-GameOwnedHelper $_))
     } | Group-Object Name | ForEach-Object {
       $anyInaccessible = $false
@@ -146,9 +144,7 @@ async function scanBackgroundHogs(gameId = 'valorant') {
   const rawHogs = Array.isArray(res.hogs) ? res.hogs : (res.hogs ? [res.hogs] : []);
   res.hogs = rawHogs.map((h) => {
     const meta = HOG_CATALOG[h.name] || { label: h.name, category: 'Background', defaultCheck: true };
-    const keepForGame =
-      keepSet.has(h.name) ||
-      (profile.id === 'valorant' && h.name === 'RiotClientServices');
+    const keepForGame = keepSet.has(h.name);
     return {
       ...h,
       label: meta.label,
@@ -222,10 +218,7 @@ async function purgeBackgroundHogs(selectedNames) {
       if ($svcMap.ContainsKey($name)) {
         Stop-Service -Name $svcMap[$name] -Force -ErrorAction SilentlyContinue
       }
-      if ($name -eq 'RiotClientServices') {
-        if (Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue) { return }
-        & taskkill.exe /F /IM "RiotClientServices.exe" 2>$null | Out-Null
-      } elseif ($name -eq 'EpicWebHelper') {
+      if ($name -eq 'EpicWebHelper') {
         foreach ($p in @(Get-TargetProcs 'EpicWebHelper')) {
           & taskkill.exe /F /PID $p.Id 2>$null | Out-Null
           Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
