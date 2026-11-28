@@ -7,6 +7,10 @@ const HOG_NAMES = [
   'firefox',
   'opera',
   'brave',
+  'Riot Client',
+  'RiotClientUx',
+  'RiotClientUxRender',
+  'RiotClientServices',
   'EpicGamesLauncher',
   'EpicWebHelper',
   'SnippingTool',
@@ -25,7 +29,12 @@ const HOG_NAMES = [
 ];
 
 // Always terminate parent launchers before helper children so parents cannot respawn helpers
-const HELPER_CHILDREN = new Set(['EpicWebHelper', 'CrossDeviceService', 'CrossDeviceResume']);
+const HELPER_CHILDREN = new Set([
+  'EpicWebHelper',
+  'RiotClientUxRender',
+  'CrossDeviceService',
+  'CrossDeviceResume',
+]);
 
 async function scanBackgroundHogs(gameId = 'valorant') {
   const profile = getGameProfile(gameId);
@@ -33,8 +42,11 @@ async function scanBackgroundHogs(gameId = 'valorant') {
   const listStr = HOG_NAMES.map((n) => `'${n}'`).join(',');
   const script = `
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $valRunning = [bool](Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue)
     $names = @(${listStr})
-    $found = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $names -contains $_.Name } | Group-Object Name | ForEach-Object {
+    $found = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+      ($names -contains $_.Name) -and -not (($_.Name -eq 'RiotClientServices') -and $valRunning)
+    } | Group-Object Name | ForEach-Object {
       $anyInaccessible = $false
       if (-not $isAdmin) {
         foreach ($p in $_.Group) {
@@ -53,6 +65,7 @@ async function scanBackgroundHogs(gameId = 'valorant') {
     $os = Get-CimInstance Win32_OperatingSystem
     [PSCustomObject]@{
       isAdmin = $isAdmin
+      valRunning = $valRunning
       freeRamGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
       totalRamGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
       hogs = $found
@@ -62,7 +75,9 @@ async function scanBackgroundHogs(gameId = 'valorant') {
   const rawHogs = Array.isArray(res.hogs) ? res.hogs : (res.hogs ? [res.hogs] : []);
   res.hogs = rawHogs.map((h) => ({
     ...h,
-    keepForGame: keepSet.has(h.name),
+    keepForGame:
+      keepSet.has(h.name) ||
+      (profile.id === 'valorant' && h.name === 'RiotClientServices'),
   }));
   return res;
 }
@@ -99,7 +114,16 @@ async function purgeBackgroundHogs(selectedNames) {
     }
 
     function Kill-Target($name) {
-      & taskkill.exe /F /T /IM "$name.exe" 2>$null | Out-Null
+      # Safety guard: NEVER kill RiotClientServices if VALORANT is running (it is VALORANT's parent process!)
+      if ($name -eq 'RiotClientServices') {
+        if (Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue) {
+          return
+        }
+        # Never pass /T on RiotClientServices; only kill the service process itself
+        & taskkill.exe /F /IM "RiotClientServices.exe" 2>$null | Out-Null
+      } else {
+        & taskkill.exe /F /T /IM "$name.exe" 2>$null | Out-Null
+      }
       $rem = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
       if ($rem.Count -gt 0) {
         $rem | Stop-Process -Force -ErrorAction SilentlyContinue
