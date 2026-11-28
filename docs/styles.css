@@ -31,7 +31,8 @@
   --cobalt-soft: rgba(27, 86, 184, 0.22);
   --cobalt-line: rgba(62, 122, 220, 0.42);
 
-  --sans: 'Saira', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --display: 'Chakra Petch', 'IBM Plex Sans', sans-serif;
+  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
 
@@ -67,6 +68,35 @@ code {
 .mono { font-family: var(--mono); }
 .tabular { font-variant-numeric: tabular-nums; }
 .hidden { display: none !important; }
+
+/* Precision Techno Display Typography (Chakra Petch) */
+h1, h2, h3,
+.brand-name,
+.side-tab,
+.btn,
+.hero-beta-note,
+.trace-fps,
+.stage-fps,
+.stat-val,
+.manifest-title,
+.faq-q,
+.filter-chip {
+  font-family: var(--display);
+}
+
+.brand-name {
+  letter-spacing: 0.025em;
+  font-weight: 700;
+}
+
+.hero-title,
+h2 {
+  letter-spacing: -0.015em;
+}
+
+.btn {
+  letter-spacing: 0.015em;
+}
 
 /* --------------------------------------------------------------------------
    Full-Viewport Side-Tab Shell
