@@ -43,9 +43,27 @@ async function scanBackgroundHogs(gameId = 'valorant') {
   const script = `
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     $valRunning = [bool](Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue)
+    $gamePids = @(Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping','FortniteClient-Win64-Shipping','cs2','r5apex','r5apex_dx12','RainbowSix','RainbowSix_DX12' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+    $cimMap = @{}
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | ForEach-Object { $cimMap[[int]$_.ProcessId] = $_ }
+
+    function Is-GameOwnedHelper($proc) {
+      if ($proc.Name -ne 'EpicWebHelper') { return $false }
+      $info = $cimMap[[int]$proc.Id]
+      if (-not $info) { return $false }
+      if ($info.ExecutablePath -and ($info.ExecutablePath -match 'VALORANT|Riot Games')) { return $true }
+      $ppid = [int]$info.ParentProcessId
+      if ($gamePids -contains $ppid) { return $true }
+      $parentInfo = $cimMap[$ppid]
+      if ($parentInfo -and ($gamePids -contains [int]$parentInfo.ParentProcessId)) { return $true }
+      return $false
+    }
+
     $names = @(${listStr})
     $found = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
-      ($names -contains $_.Name) -and -not (($_.Name -eq 'RiotClientServices') -and $valRunning)
+      ($names -contains $_.Name) -and
+      (-not (($_.Name -eq 'RiotClientServices') -and $valRunning)) -and
+      (-not (Is-GameOwnedHelper $_))
     } | Group-Object Name | ForEach-Object {
       $anyInaccessible = $false
       if (-not $isAdmin) {
@@ -98,6 +116,25 @@ async function purgeBackgroundHogs(selectedNames) {
 
   const script = `
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $gamePids = @(Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping','FortniteClient-Win64-Shipping','cs2','r5apex','r5apex_dx12','RainbowSix','RainbowSix_DX12' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+    $cimMap = @{}
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | ForEach-Object { $cimMap[[int]$_.ProcessId] = $_ }
+
+    function Get-TargetProcs($name) {
+      $all = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+      if ($name -ne 'EpicWebHelper') { return $all }
+      return @($all | Where-Object {
+        $info = $cimMap[[int]$_.Id]
+        if (-not $info) { return $true }
+        if ($info.ExecutablePath -and ($info.ExecutablePath -match 'VALORANT|Riot Games')) { return $false }
+        $ppid = [int]$info.ParentProcessId
+        if ($gamePids -contains $ppid) { return $false }
+        $parentInfo = $cimMap[$ppid]
+        if ($parentInfo -and ($gamePids -contains [int]$parentInfo.ParentProcessId)) { return $false }
+        return $true
+      })
+    }
+
     $allTargets = @(${allStr})
     $parentTargets = @(${parentStr})
     $childTargets = @(${childStr})
@@ -106,7 +143,7 @@ async function purgeBackgroundHogs(selectedNames) {
     $beforeCount = 0
     $beforeMB = 0.0
     foreach ($t in $allTargets) {
-      $ps = @(Get-Process -Name $t -ErrorAction SilentlyContinue)
+      $ps = @(Get-TargetProcs $t)
       $beforeCount += $ps.Count
       if ($ps.Count -gt 0) {
         $beforeMB += ($ps | Measure-Object WorkingSet64 -Sum).Sum / 1MB
@@ -119,12 +156,18 @@ async function purgeBackgroundHogs(selectedNames) {
         if (Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue) {
           return
         }
-        # Never pass /T on RiotClientServices; only kill the service process itself
         & taskkill.exe /F /IM "RiotClientServices.exe" 2>$null | Out-Null
+      } elseif ($name -eq 'EpicWebHelper') {
+        # Kill only non-game EpicWebHelper PIDs so we never touch VALORANT's Unreal Engine CEF child
+        foreach ($p in @(Get-TargetProcs 'EpicWebHelper')) {
+          & taskkill.exe /F /PID $p.Id 2>$null | Out-Null
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+        }
+        return
       } else {
         & taskkill.exe /F /T /IM "$name.exe" 2>$null | Out-Null
       }
-      $rem = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+      $rem = @(Get-TargetProcs $name)
       if ($rem.Count -gt 0) {
         $rem | Stop-Process -Force -ErrorAction SilentlyContinue
       }
@@ -138,12 +181,14 @@ async function purgeBackgroundHogs(selectedNames) {
 
     Start-Sleep -Milliseconds 350
 
-    # Verify which processes actually exited vs survived
+    # Refresh CIM map & verify which non-game targets actually exited vs survived
+    $cimMap = @{}
+    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | ForEach-Object { $cimMap[[int]$_.ProcessId] = $_ }
     $afterCount = 0
     $afterMB = 0.0
     $still = @()
     foreach ($t in $allTargets) {
-      $ps = @(Get-Process -Name $t -ErrorAction SilentlyContinue)
+      $ps = @(Get-TargetProcs $t)
       if ($ps.Count -gt 0) {
         $afterCount += $ps.Count
         $afterMB += ($ps | Measure-Object WorkingSet64 -Sum).Sum / 1MB
