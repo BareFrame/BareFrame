@@ -1,3 +1,85 @@
+/* ==========================================================================
+   BareFrame Desktop — Renderer & Interruptible Spring Physics
+   Follows Apple Fluid Interfaces:
+   - Interruptible 1D critically-damped springs (damping 1.0, response 0.30–0.36)
+   - Pointer-down instant tab switching + spring active nav pill
+   - Spring-driven readiness bar & progress fill
+   - Scroll edge depth awareness + modal background dim/recess
+   - Reduced-motion compliance
+   ========================================================================== */
+
+const prefersReducedMotion = () =>
+  window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+class Spring1D {
+  constructor(initialValue, { damping = 1.0, response = 0.32, onUpdate } = {}) {
+    this.value = initialValue;
+    this.target = initialValue;
+    this.velocity = 0;
+    this.damping = damping;
+    this.response = response;
+    this.onUpdate = onUpdate || (() => {});
+    this.raf = null;
+    this.lastTime = 0;
+  }
+
+  setImmediate(val) {
+    this.stop();
+    this.value = val;
+    this.target = val;
+    this.velocity = 0;
+    this.onUpdate(val);
+  }
+
+  animateTo(target, { damping = this.damping, response = this.response } = {}) {
+    this.target = target;
+    this.damping = damping;
+    this.response = response;
+
+    if (prefersReducedMotion()) {
+      this.setImmediate(target);
+      return;
+    }
+
+    if (!this.raf) {
+      this.lastTime = performance.now();
+      this.raf = requestAnimationFrame(this._tick);
+    }
+  }
+
+  stop() {
+    if (this.raf) {
+      cancelAnimationFrame(this.raf);
+      this.raf = null;
+    }
+  }
+
+  _tick = (now) => {
+    const dt = Math.min(0.032, (now - this.lastTime) / 1000);
+    this.lastTime = now;
+
+    const omega = (2 * Math.PI) / Math.max(0.05, this.response);
+    const k = omega * omega;
+    const c = 2 * this.damping * omega;
+
+    const displacement = this.value - this.target;
+    const accel = -k * displacement - c * this.velocity;
+    this.velocity += accel * dt;
+    this.value += this.velocity * dt;
+
+    if (Math.abs(this.value - this.target) < 0.05 && Math.abs(this.velocity) < 0.5) {
+      this.value = this.target;
+      this.velocity = 0;
+      this.onUpdate(this.value);
+      this.raf = null;
+      return;
+    }
+
+    this.onUpdate(this.value);
+    this.raf = requestAnimationFrame(this._tick);
+  };
+}
+
 const state = {
   gameId: localStorage.getItem('bf_selected_game') || null,
   games: [],
@@ -27,6 +109,19 @@ function getActiveGame() {
 
 const $ = (id) => document.getElementById(id);
 
+function syncModalDim() {
+  const anyOpen = [
+    'modal-backdrop',
+    'update-modal-backdrop',
+    'tip-modal-backdrop',
+    'game-picker-overlay',
+  ].some((id) => {
+    const el = $(id);
+    return el && !el.classList.contains('hidden');
+  });
+  document.body.classList.toggle('modal-active', anyOpen);
+}
+
 function showToast(msg, duration = 3500) {
   const el = $('toast');
   el.textContent = msg;
@@ -40,8 +135,10 @@ function confirmModal(title, body) {
     $('modal-title').textContent = title;
     $('modal-body').textContent = body;
     $('modal-backdrop').classList.remove('hidden');
+    syncModalDim();
     const cleanup = (val) => {
       $('modal-backdrop').classList.add('hidden');
+      syncModalDim();
       $('modal-cancel').onclick = null;
       $('modal-confirm').onclick = null;
       resolve(val);
@@ -57,22 +154,80 @@ $('btn-max').onclick = () => window.frameforge.maximize();
 $('btn-close').onclick = () => window.frameforge.close();
 $('btn-open-backups').onclick = () => window.frameforge.openBackups();
 
-// Tab Navigation
+// Scroll Edge Awareness (§12)
+const mainContent = $('main-content');
+mainContent.addEventListener('scroll', () => {
+  mainContent.classList.toggle('is-scrolled', mainContent.scrollTop > 8);
+}, { passive: true });
+
+// Interruptible Spring Navigation Indicator (§3, §4)
+const navPill = $('nav-active-pill');
+const navPillY = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.28,
+  onUpdate: (y) => {
+    navPill.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+  },
+});
+
+function moveNavPill(btn, immediate = false) {
+  if (!btn || !navPill) return;
+  const targetY = btn.offsetTop;
+  navPill.style.height = `${btn.offsetHeight}px`;
+  if (immediate) navPillY.setImmediate(targetY);
+  else navPillY.animateTo(targetY);
+}
+
 function switchTab(tabId) {
+  let activeBtn = null;
   document.querySelectorAll('.nav-item').forEach((b) => {
-    b.classList.toggle('active', b.dataset.tab === tabId);
+    const active = b.dataset.tab === tabId;
+    b.classList.toggle('active', active);
+    if (active) activeBtn = b;
   });
+  moveNavPill(activeBtn);
   document.querySelectorAll('.tab-panel').forEach((p) => {
     p.classList.toggle('active', p.id === `tab-${tabId}`);
   });
+  mainContent.scrollTop = 0;
+  mainContent.classList.remove('is-scrolled');
   if (tabId === 'telemetry' && !state.telemetry) loadTelemetry();
   if (tabId === 'boost') loadHogs();
 }
 
+// Respond immediately on pointerdown for zero perceived latency (§1)
 document.querySelectorAll('.nav-item').forEach((btn) => {
-  btn.onclick = () => switchTab(btn.dataset.tab);
+  btn.addEventListener('pointerdown', () => switchTab(btn.dataset.tab));
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
 $('btn-quick-opt').onclick = () => switchTab('tweaks');
+requestAnimationFrame(() => moveNavPill(document.querySelector('.nav-item.active'), true));
+
+// Spring-driven Readiness & Progress Bars
+const scoreSpring = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.42,
+  onUpdate: (v) => {
+    const clamped = Math.max(0, Math.min(100, v));
+    const rounded = Math.round(clamped);
+    const scoreEl = $('score-num');
+    const barFill = $('score-bar-fill');
+    scoreEl.textContent = String(rounded);
+    scoreEl.className = `score-num ${rounded >= 80 ? 'is-good' : rounded < 55 ? 'is-low' : ''}`.trim();
+    barFill.style.width = `${clamped.toFixed(1)}%`;
+    barFill.style.background = rounded >= 80 ? '#0A84FF' : rounded >= 55 ? '#5AC8FA' : '#FF375F';
+  },
+});
+
+const heroProgSpring = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.3,
+  onUpdate: (v) => {
+    const c = Math.max(0, Math.min(100, v));
+    $('hero-progress-fill').style.width = `${c.toFixed(1)}%`;
+    $('hero-progress-pct').textContent = `${Math.round(c)}%`;
+  },
+});
 
 // ---------------- AUDIT / OVERVIEW ----------------
 async function loadAudit() {
@@ -88,38 +243,32 @@ async function loadAudit() {
     showToast(`Audit error: ${err.message}`);
   } finally {
     $('btn-rescan').disabled = false;
-    $('btn-rescan').textContent = 'Re-Scan PC';
+    $('btn-rescan').textContent = 'Re-Scan';
   }
 }
 
 function renderAudit(d) {
   const badge = $('admin-badge');
   if (d.isAdmin) {
-    badge.textContent = 'ADMIN';
+    badge.textContent = 'Admin Active';
     badge.className = 'admin-badge is-admin';
     badge.style.cursor = 'default';
     badge.onclick = null;
   } else {
-    badge.textContent = 'STANDARD · ELEVATE';
+    badge.textContent = 'Standard · Elevate';
     badge.className = 'admin-badge no-admin';
     badge.style.cursor = 'pointer';
     badge.title = 'Relaunch with Administrator privileges to apply system tweaks';
     badge.onclick = () => ensureAdmin('Enable Administrator Mode');
   }
 
-  // Linear Readiness Bar & Score
-  const scoreEl = $('score-num');
-  const barFill = $('score-bar-fill');
-  scoreEl.textContent = d.score;
-  scoreEl.className = `score-num ${d.score >= 80 ? 'is-good' : d.score < 55 ? 'is-low' : ''}`.trim();
-  barFill.style.width = `${Math.max(0, Math.min(100, d.score))}%`;
-  barFill.style.background = d.score >= 80 ? '#2563EB' : d.score >= 55 ? '#60A5FA' : '#E6324B';
+  scoreSpring.animateTo(d.score);
 
   $('score-verdict').textContent =
     d.score >= 90 ? 'Tuned' : d.score >= 70 ? 'Mostly Tuned' : d.score >= 45 ? 'Bottlenecks Found' : 'Stock Overhead';
   const doneCount = Object.values(d.status).filter(Boolean).length;
   const totalCount = Object.keys(d.status).length;
-  $('score-sub').textContent = `${doneCount}/${totalCount} subsystems tuned`;
+  $('score-sub').textContent = `${doneCount} of ${totalCount} subsystems tuned`;
   $('nav-tweaks-badge').textContent = `${doneCount}/${totalCount}`;
 
   // Hardware
@@ -136,11 +285,11 @@ function renderAudit(d) {
   const countPill = $('bottleneck-count');
   if (d.bottlenecks.length === 0) {
     const g = getActiveGame();
-    countPill.textContent = '0 FOUND';
+    countPill.textContent = 'All Clear';
     countPill.className = 'pill-blue';
-    list.innerHTML = `<div class="empty-state" style="color:#60A5FA;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
+    list.innerHTML = `<div class="empty-state" style="color:#5AC8FA;">All audited Windows, hardware, and ${g.shortName} subsystems are tuned.</div>`;
   } else {
-    countPill.textContent = `${d.bottlenecks.length} FOUND`;
+    countPill.textContent = `${d.bottlenecks.length} Found`;
     countPill.className = 'pill-red';
     list.innerHTML = d.bottlenecks
       .map(
@@ -179,19 +328,21 @@ function renderTweaks() {
       const done = Boolean(statusMap[t.id]);
       const checked = state.selectedTweaks.has(t.id) ? 'checked' : '';
       const impactCls = t.impact.includes('HIGH') ? 'pill-red' : 'pill-neutral';
-      const safetyCls = t.optIn ? 'pill-opt' : 'pill-neutral';
       return `
       <div class="tweak-card ${t.optIn ? 'opt-in' : ''}">
         <div class="tweak-row-compact">
           <label class="tweak-check-wrap">
-            <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
+            <span class="apple-switch">
+              <input type="checkbox" class="tweak-check" data-id="${t.id}" ${checked} />
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </span>
             <span class="tweak-name">${t.name}</span>
           </label>
           <div class="tweak-badges">
             <span class="${impactCls}">${t.impact}</span>
-            <span class="${safetyCls}">${t.optIn ? 'OPT-IN' : 'STANDARD'}</span>
-            ${t.requiresReboot ? '<span class="pill-neutral">REBOOT</span>' : ''}
-            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'APPLIED' : 'STOCK'}</span>
+            ${t.optIn ? '<span class="pill-opt">Opt-In</span>' : ''}
+            ${t.requiresReboot ? '<span class="pill-neutral">Reboot</span>' : ''}
+            <span class="${done ? 'pill-blue' : 'pill-neutral'}">${done ? 'Applied' : 'Stock'}</span>
             <button type="button" class="expand-btn" aria-expanded="false" title="Show details">+</button>
           </div>
         </div>
@@ -231,7 +382,7 @@ function resetConsole(initialLine) {
   consoleLineCount = 1;
   $('tweak-console').textContent = initialLine;
   const pill = $('console-count-pill');
-  if (pill) pill.textContent = '1 LINE';
+  if (pill) pill.textContent = '1 line';
 }
 
 window.frameforge.onTweakLog((line) => {
@@ -240,13 +391,12 @@ window.frameforge.onTweakLog((line) => {
   pre.scrollTop = pre.scrollHeight;
   consoleLineCount++;
   const pill = $('console-count-pill');
-  if (pill) pill.textContent = `${consoleLineCount} LINES`;
+  if (pill) pill.textContent = `${consoleLineCount} lines`;
 });
 
 window.frameforge.onTweakProgress((prog) => {
   $('hero-progress-label').textContent = prog.label;
-  $('hero-progress-pct').textContent = `${prog.pct}%`;
-  $('hero-progress-fill').style.width = `${prog.pct}%`;
+  heroProgSpring.animateTo(prog.pct);
   $('hero-progress-step').textContent = `Step ${Math.min(prog.step, prog.total)} of ${prog.total}`;
 });
 
@@ -255,8 +405,8 @@ function renderResultsBreakdown(res) {
   const list = $('hero-results-list');
   $('hero-results-title').textContent = `Optimization complete (${res.applied} modules applied)`;
   $('hero-results-sub').textContent = res.requiresReboot
-    ? 'Expand any row for exact output. Reboot once so kernel and Bare-Metal settings activate.'
-    : 'All applied settings are active now. Expand any row for exact output.';
+    ? 'Expand any row for details. Reboot once so kernel and Bare-Metal settings activate.'
+    : 'All applied settings are active now. Expand any row for details.';
 
   list.innerHTML = (res.results || [])
     .map((r) => {
@@ -308,15 +458,13 @@ $('btn-hero-optimize').onclick = async () => {
   $('hero-idle-state').classList.add('hidden');
   $('hero-results-card').classList.add('hidden');
   $('hero-progress-state').classList.remove('hidden');
-  $('hero-progress-fill').style.width = '3%';
-  $('hero-progress-pct').textContent = '3%';
+  heroProgSpring.setImmediate(3);
   $('hero-progress-label').textContent = 'Creating System Restore Point & registry/config backups…';
   resetConsole(`Running optimization (${ids.length} modules)…`);
 
   try {
     const res = await window.frameforge.applyTweaks(ids, state.gameId || 'valorant');
-    $('hero-progress-fill').style.width = '100%';
-    $('hero-progress-pct').textContent = '100%';
+    heroProgSpring.animateTo(100);
     $('hero-progress-label').textContent = `Completed (${res.applied} modules applied)`;
     renderResultsBreakdown(res);
     showToast(`Applied ${res.applied} modules.`);
@@ -343,7 +491,7 @@ $('btn-results-tip').onclick = () => $('btn-tip-sidebar').click();
 $('btn-apply-tweaks').onclick = async () => {
   if (!(await ensureAdmin('Apply Selected Tweaks'))) return;
   const ids = [...state.selectedTweaks];
-  if (ids.length === 0) return showToast('Select at least one tweak first.');
+  if (ids.length === 0) return showToast('Enable at least one optimization first.');
   if (ids.includes('baremetal_vbs')) {
     const ok = await confirmModal(
       'Bare-Metal Mode Selected',
@@ -374,7 +522,7 @@ $('btn-apply-tweaks').onclick = async () => {
 $('btn-revert-all').onclick = async () => {
   if (!(await ensureAdmin('Revert All Optimizations'))) return;
   const ok = await confirmModal(
-    'Revert All Tweaks?',
+    'Revert All Optimizations?',
     'Restores Windows defaults for MMCSS, kernel timers, power plan, memory compression, services, USB/Ethernet power saving, IFEO priority, and VBS/Hyper-V.'
   );
   if (!ok) return;
@@ -407,7 +555,7 @@ $('btn-reboot-now').onclick = async (e) => {
 async function loadBiosGuide(vendor, model) {
   const guide = await window.frameforge.getBiosGuide(vendor, model);
   $('bios-card-title').textContent = `${guide.brand} BIOS Guide`;
-  $('bios-key-pill').textContent = `KEY: ${guide.key}`;
+  $('bios-key-pill').textContent = `Key: ${guide.key}`;
   $('bios-steps').innerHTML = guide.steps.map((s) => `<li>${s}</li>`).join('');
 }
 
@@ -430,16 +578,16 @@ function renderThrottleChart(samples) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yOf(v)}" x2="${W - padR}" y2="${yOf(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 6}" y="${yOf(v) + 4}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
-      <polyline fill="none" stroke="#60A5FA" stroke-width="2" points="${pts}" />
+      <polyline fill="none" stroke="#0A84FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />
       ${samples
         .map(
           (s) => `
-        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#E6324B" stroke="#08090C" stroke-width="1.5"/>
-        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F3F5F9" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
-        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
+        <circle cx="${xOf(s.sec)}" cy="${yOf(s.avgMHz)}" r="4" fill="#FF375F" stroke="#0D0F14" stroke-width="1.5"/>
+        <text x="${xOf(s.sec)}" y="${yOf(s.avgMHz) - 9}" fill="#F5F7FA" font-family="Consolas,monospace" font-size="10" font-weight="600" text-anchor="middle">${s.avgMHz}</text>
+        <text x="${xOf(s.sec)}" y="${H - 6}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="middle">T+${s.sec}s</text>`
         )
         .join('')}
     </svg>`;
@@ -455,7 +603,7 @@ $('btn-run-throttle').onclick = async () => {
   state.throttleSamples = [];
   $('btn-run-throttle').disabled = true;
   $('btn-run-throttle').textContent = 'Testing (35s)…';
-  $('throttle-verdict-pill').textContent = 'RUNNING';
+  $('throttle-verdict-pill').textContent = 'Running';
   $('throttle-verdict-pill').className = 'pill-blue';
   $('throttle-summary').textContent = 'Applying sustained 6-thread CPU load to measure 28s Tau / PL1 and thermal stability…';
   try {
@@ -485,7 +633,7 @@ $('btn-reboot-bios').onclick = async () => {
   }
 };
 
-// ---------------- MATCH TELEMETRY ----------------
+// ---------------- MATCH LOGS ----------------
 async function loadTelemetry() {
   try {
     const data = await window.frameforge.getTelemetry();
@@ -503,7 +651,7 @@ function renderTelemetry(data) {
 
   if (!data.installed || !data.sessions.length) {
     kpis.innerHTML = '';
-    chartWrap.innerHTML = `<div class="empty-state">No completed VALORANT match logs found in %LOCALAPPDATA%\\VALORANT\\Saved\\Logs\\. Complete a match and click Refresh Logs.</div>`;
+    chartWrap.innerHTML = `<div class="empty-state">No completed VALORANT match logs found in %LOCALAPPDATA%\\VALORANT\\Saved\\Logs\\. Complete a match and click Refresh.</div>`;
     tbody.innerHTML = '';
     return;
   }
@@ -532,7 +680,7 @@ function renderTelemetry(data) {
     </div>`;
 
   const bp = $('telemetry-bottleneck-pill');
-  bp.textContent = `BOTTLENECK: ${s.latestBottleneck.toUpperCase()}`;
+  bp.textContent = `Bottleneck: ${s.latestBottleneck}`;
   bp.className = s.latestBottleneck === 'CPU-Bound' ? 'pill-red' : 'pill-blue';
 
   const tipBanner = $('telemetry-tip-banner');
@@ -547,7 +695,7 @@ function renderTelemetry(data) {
   const W = 860, H = 210, padL = 46, padR = 24, padT = 24, padB = 34;
   const maxFps = Math.max(...sessions.map((x) => x.avgFps), 320) + 40;
   const slotW = (W - padL - padR) / Math.max(sessions.length, 1);
-  const barW = Math.min(48, slotW * 0.52);
+  const barW = Math.min(46, slotW * 0.5);
   const yFps = (f) => padT + ((maxFps - f) / maxFps) * (H - padT - padB);
 
   chartWrap.innerHTML = `
@@ -557,7 +705,7 @@ function renderTelemetry(data) {
         .map(
           (v) => `
         <line x1="${padL}" y1="${yFps(v)}" x2="${W - padR}" y2="${yFps(v)}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3"/>
-        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#687285" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
+        <text x="${padL - 8}" y="${yFps(v) + 4}" fill="#6D7689" font-family="Consolas,monospace" font-size="10" text-anchor="end">${v}</text>`
         )
         .join('')}
       ${sessions
@@ -567,11 +715,11 @@ function renderTelemetry(data) {
           const h = H - padB - top;
           const isLast = i === sessions.length - 1;
           return `
-            <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="2"
-                  fill="${isLast ? '#2563EB' : 'rgba(230,50,75,0.75)'}" />
-            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#60A5FA' : '#F3F5F9'}" font-family="Consolas,monospace" font-size="10.5" font-weight="700" text-anchor="middle">${m.avgFps}</text>
-            <text x="${cx}" y="${H - 15}" fill="#687285" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
-            <text x="${cx}" y="${H - 3}" fill="#A0A8B8" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
+            <rect x="${cx - barW / 2}" y="${top}" width="${barW}" height="${Math.max(2, h)}" rx="5"
+                  fill="${isLast ? '#0A84FF' : 'rgba(255,55,95,0.72)'}" />
+            <text x="${cx}" y="${top - 7}" fill="${isLast ? '#5AC8FA' : '#F5F7FA'}" font-family="Consolas,monospace" font-size="10.5" font-weight="600" text-anchor="middle">${m.avgFps}</text>
+            <text x="${cx}" y="${H - 15}" fill="#6D7689" font-family="Consolas,monospace" font-size="9.5" text-anchor="middle">${m.dateLabel}</text>
+            <text x="${cx}" y="${H - 3}" fill="#9CA5B7" font-family="Consolas,monospace" font-size="9" text-anchor="middle">${m.pctUnder240}% &lt;240</text>`;
         })
         .join('')}
     </svg>`;
@@ -583,7 +731,7 @@ function renderTelemetry(data) {
     <tr class="${idx === 0 ? 'latest-row' : ''}">
       <td>${m.dateLabel}</td>
       <td>${m.mode}</td>
-      <td><strong style="color:${idx === 0 ? '#60A5FA' : '#F3F5F9'}">${m.avgFps}</strong></td>
+      <td><strong style="color:${idx === 0 ? '#5AC8FA' : '#F5F7FA'}">${m.avgFps}</strong></td>
       <td>${m.avgFrametimeMs} ms</td>
       <td>${m.pctUnder240}%</td>
       <td>${m.pctOver240}%</td>
@@ -611,7 +759,7 @@ async function loadHogs() {
 
     const list = $('boost-list');
     if (!state.hogs.length) {
-      list.innerHTML = `<div class="empty-state" style="color:#60A5FA;">No heavy background apps detected.</div>`;
+      list.innerHTML = `<div class="empty-state" style="color:#5AC8FA;">No heavy background apps detected.</div>`;
       return;
     }
 
@@ -620,10 +768,13 @@ async function loadHogs() {
         (h) => `
       <label class="boost-row">
         <div class="boost-left">
-          <input type="checkbox" class="tweak-check hog-check" data-name="${h.name}" ${h.isOverlay || h.keepForGame ? '' : 'checked'} />
+          <span class="apple-switch">
+            <input type="checkbox" class="hog-check" data-name="${h.name}" ${h.isOverlay || h.keepForGame ? '' : 'checked'} />
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </span>
           <div>
             <div style="font-weight:600">${h.name} ${h.isOverlay ? '<span class="pill-red">Overlay (Disable in App UI)</span>' : ''}${h.keepForGame ? `<span class="pill-blue">Needed for ${activeGame.shortName}</span>` : ''}</div>
-            <div style="font-size:11px;color:#687285">${h.count} process(es)</div>
+            <div style="font-size:11.5px;color:#6D7689">${h.count} process(es)</div>
           </div>
         </div>
         <div class="boost-meta">
@@ -653,7 +804,7 @@ $('btn-launch-val').onclick = async () => {
   else showToast(`Could not auto-launch ${g.name} — verify it is installed.`);
 };
 
-// ---------------- SUPPORT MODAL ----------------
+// ---------------- SUPPORT SHEET ----------------
 async function initSupport() {
   state.support = await window.frameforge.getSupportConfig();
   $('btn-tip-kofi').onclick = () => {
@@ -671,6 +822,7 @@ function openTipModal(title, body) {
   if (body) $('tip-modal-body').textContent = body;
   $('chk-tip-optout').checked = localStorage.getItem('bf_tip_optout') === '1';
   $('tip-modal-backdrop').classList.remove('hidden');
+  syncModalDim();
 }
 
 function closeTipModal() {
@@ -678,6 +830,7 @@ function closeTipModal() {
     localStorage.setItem('bf_tip_optout', '1');
   }
   $('tip-modal-backdrop').classList.add('hidden');
+  syncModalDim();
 }
 
 function maybePromptTip(title, body) {
@@ -699,7 +852,7 @@ $('btn-tip-banner').onclick = () =>
   );
 $('btn-tip-close').onclick = closeTipModal;
 
-// ---------------- AUTO-UPDATER (GitHub Releases) ----------------
+// ---------------- AUTOMATIC UPDATER (Launch + 30-Min Silent Check) ----------------
 let latestUpdateInfo = null;
 
 async function initUpdater() {
@@ -718,11 +871,11 @@ async function runUpdateCheck() {
     latestUpdateInfo = info;
     if (info.hasUpdate && info.downloadUrl) {
       const upPill = $('btn-update-pill');
-      upPill.textContent = `UPDATE v${info.latestVersion}`;
+      upPill.textContent = `Update v${info.latestVersion}`;
       upPill.classList.remove('hidden');
 
       const sideCard = $('sidebar-update-card');
-      $('sidebar-update-ver').textContent = `UPDATE v${info.latestVersion}`;
+      $('sidebar-update-ver').textContent = `Update v${info.latestVersion} Ready`;
       $('btn-sidebar-install-update').textContent = 'Install Update';
       $('btn-sidebar-install-update').disabled = false;
       $('sidebar-update-prog').classList.add('hidden');
@@ -735,11 +888,12 @@ async function runUpdateCheck() {
 
 function openUpdateModal(info) {
   $('update-modal-title').textContent = `Update to BareFrame v${info.latestVersion}`;
-  $('update-modal-body').textContent = `Installed: v${info.currentVersion} -> New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). Downloads from GitHub Releases and restarts automatically.`;
+  $('update-modal-body').textContent = `Installed: v${info.currentVersion} → New: v${info.latestVersion} (${info.assetName}, ${info.sizeMB} MB). Downloads from GitHub Releases, installs silently, and relaunches automatically.`;
   $('update-progress-wrap').classList.add('hidden');
   $('btn-update-install').disabled = false;
   $('btn-update-install').textContent = 'Download & Install';
   $('update-modal-backdrop').classList.remove('hidden');
+  syncModalDim();
 }
 
 window.frameforge.onUpdateProgress((p) => {
@@ -792,18 +946,19 @@ $('btn-update-pill').onclick = () => {
   if (latestUpdateInfo) openUpdateModal(latestUpdateInfo);
 };
 $('btn-sidebar-install-update').onclick = triggerInstallUpdate;
-$('btn-update-later').onclick = () => $('update-modal-backdrop').classList.add('hidden');
+$('btn-update-later').onclick = () => {
+  $('update-modal-backdrop').classList.add('hidden');
+  syncModalDim();
+};
 $('btn-update-install').onclick = triggerInstallUpdate;
 
 // ---------------- GAME PROFILE SELECTOR (FIRST BOOT + SWITCHER) ----------------
 function applyGameUi() {
   const g = getActiveGame();
   $('sidebar-game-name').textContent = g.shortName;
-  $('overview-title').textContent = g.id === 'all'
-    ? 'System Overview'
-    : `System Overview · ${g.name}`;
+  $('overview-title').textContent = g.id === 'all' ? 'Overview' : `Overview · ${g.name}`;
   $('overview-subtitle').textContent =
-    `Profile: ${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Tweaks · 1-Click Revert`;
+    `${g.name} (${g.antiCheat}) · Automatic Restore Point · 12 Tailored Optimizations`;
   $('hero-cta-desc').textContent =
     `Tailored for ${g.name}. Creates a System Restore Point and backups first, then applies Windows scheduler, kernel timer, power plan, USB/Ethernet, GPU MSI-X, Memory Compression, ShadowPlay, and ${g.shortName}-specific adjustments (${g.tweakSummary}).`;
   $('hero-vbs-sub').textContent = g.vbsNote;
@@ -839,7 +994,7 @@ function renderGamePickerCards() {
             <div class="game-card-meta">${g.engine} · ${g.antiCheat}</div>
           </div>
           <div class="game-card-badges">
-            ${installed ? '<span class="game-installed-tag">INSTALLED</span>' : ''}
+            ${installed ? '<span class="game-installed-tag">Installed</span>' : ''}
             <span class="game-check-indicator">${selected ? '✓' : ''}</span>
           </div>
         </div>
@@ -849,10 +1004,10 @@ function renderGamePickerCards() {
     .join('');
 
   grid.querySelectorAll('.game-card').forEach((card) => {
-    card.onclick = () => {
+    card.addEventListener('pointerdown', () => {
       state.pendingGameId = card.dataset.gameId;
       updateGamePickerSelection();
-    };
+    });
     card.ondblclick = () => {
       state.pendingGameId = card.dataset.gameId;
       confirmGameSelection();
@@ -868,7 +1023,7 @@ function updateGamePickerSelection() {
   if (chosen) {
     confirmBtn.disabled = false;
     confirmBtn.textContent = `Continue with ${chosen.shortName}`;
-    note.textContent = `Selected: ${chosen.name} · 12 tailored optimizations ready`;
+    note.textContent = `${chosen.name} · 12 tailored optimizations ready`;
   } else {
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Continue';
@@ -877,7 +1032,7 @@ function updateGamePickerSelection() {
 }
 
 function openGamePicker(isFirstBoot = false) {
-  $('game-picker-kicker').textContent = isFirstBoot ? 'FIRST-TIME SETUP' : 'SWITCH GAME PROFILE';
+  $('game-picker-kicker').textContent = isFirstBoot ? 'Welcome to BareFrame' : 'Switch Game Profile';
   $('btn-game-picker-cancel').classList.toggle('hidden', isFirstBoot);
   if (!state.pendingGameId) {
     state.pendingGameId = state.gameId || Object.keys(state.installedGames).find((k) => k !== 'all' && state.installedGames[k]) || 'valorant';
@@ -886,6 +1041,7 @@ function openGamePicker(isFirstBoot = false) {
   }
   updateGamePickerSelection();
   $('game-picker-overlay').classList.remove('hidden');
+  syncModalDim();
 }
 
 async function confirmGameSelection() {
@@ -894,6 +1050,7 @@ async function confirmGameSelection() {
   state.gameId = state.pendingGameId;
   localStorage.setItem('bf_selected_game', state.gameId);
   $('game-picker-overlay').classList.add('hidden');
+  syncModalDim();
   applyGameUi();
   await initTweaks();
   await loadAudit();
@@ -902,7 +1059,10 @@ async function confirmGameSelection() {
 }
 
 $('btn-switch-game').onclick = () => openGamePicker(false);
-$('btn-game-picker-cancel').onclick = () => $('game-picker-overlay').classList.add('hidden');
+$('btn-game-picker-cancel').onclick = () => {
+  $('game-picker-overlay').classList.add('hidden');
+  syncModalDim();
+};
 $('btn-game-picker-confirm').onclick = confirmGameSelection;
 
 async function bootApp() {
