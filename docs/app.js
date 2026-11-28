@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BareFrame Web — Interactive Frametime Trace, Spring Physics & 12-Tweak Data
+   BareFrame Web — Side-Tab Navigation, Spring Physics & Live Frametime Trace
    ========================================================================== */
 
 const prefersReducedMotion = () =>
@@ -231,10 +231,34 @@ const TWEAKS_DATA = [
 ];
 
 /* --------------------------------------------------------------------------
-   2. Top Bar Scroll Awareness + Scroll Progress Hairline + Nav Hover/Spy Pill
+   2. Side-Tab Navigation + Dual Spring Pills + Hash Deep-Link Support (#download etc.)
    -------------------------------------------------------------------------- */
-const topbar = document.getElementById('topbar');
+const TAB_ORDER = ['overview', 'telemetry', 'changes', 'download', 'questions'];
+const sideNav = document.getElementById('side-nav');
+const sideActivePill = document.getElementById('side-active-pill');
+const sideHoverPill = document.getElementById('side-hover-pill');
+const sideTabs = [...sideNav.querySelectorAll('.side-tab')];
+const workspace = document.getElementById('workspace');
 const scrollProgBar = document.getElementById('scroll-progress-bar');
+
+let activeTabId = 'overview';
+
+const sideActiveY = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.26,
+  onUpdate: (y) => {
+    sideActivePill.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+  },
+});
+
+const sideHoverY = new Spring1D(0, {
+  damping: 1.0,
+  response: 0.22,
+  onUpdate: (y) => {
+    sideHoverPill.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+  },
+});
+
 const scrollProgSpring = new Spring1D(0, {
   damping: 1.0,
   response: 0.18,
@@ -243,45 +267,108 @@ const scrollProgSpring = new Spring1D(0, {
   },
 });
 
-const primaryNav = document.getElementById('primary-nav');
-const navHoverPill = document.getElementById('nav-hover-pill');
-const navActiveDot = document.getElementById('nav-active-dot');
-const navLinks = [...primaryNav.querySelectorAll('.nav-link')];
-const sectionLinks = navLinks.filter((l) => l.dataset.section);
+function syncWorkspaceScroll() {
+  const maxScroll = workspace.scrollHeight - workspace.clientHeight;
+  if (maxScroll <= 12) {
+    scrollProgSpring.setImmediate(0);
+    return;
+  }
+  scrollProgSpring.animateTo((workspace.scrollTop / maxScroll) * 100);
+}
+workspace.addEventListener('scroll', syncWorkspaceScroll, { passive: true });
 
-const navDotX = new Spring1D(0, {
-  damping: 1.0,
-  response: 0.28,
-  onUpdate: (x) => {
-    navActiveDot.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
-  },
+function moveSidePill(btn, immediate = false) {
+  if (!btn || !sideActivePill) return;
+  sideActivePill.style.height = `${btn.offsetHeight}px`;
+  if (immediate) sideActiveY.setImmediate(btn.offsetTop);
+  else sideActiveY.animateTo(btn.offsetTop);
+}
+
+let hoverPillShown = false;
+sideTabs.forEach((tab) => {
+  tab.addEventListener('pointerenter', () => {
+    if (!hoverPillShown) {
+      sideHoverY.setImmediate(tab.offsetTop);
+      hoverPillShown = true;
+    } else {
+      sideHoverY.animateTo(tab.offsetTop);
+    }
+    sideHoverPill.style.height = `${tab.offsetHeight}px`;
+    sideHoverPill.style.opacity = '1';
+  });
+});
+sideNav.addEventListener('pointerleave', () => {
+  sideHoverPill.style.opacity = '0';
+  hoverPillShown = false;
 });
 
-function syncTopbar() {
-  topbar.classList.toggle('scrolled', window.scrollY > 10);
-  const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-  scrollProgSpring.animateTo((window.scrollY / maxScroll) * 100);
+function switchTab(tabId, { immediate = false, updateHash = true } = {}) {
+  if (!TAB_ORDER.includes(tabId)) tabId = 'overview';
+  const prevIdx = TAB_ORDER.indexOf(activeTabId);
+  const nextIdx = TAB_ORDER.indexOf(tabId);
+  const dirClass = nextIdx >= prevIdx ? 'enter-down' : 'enter-up';
+  const changed = tabId !== activeTabId;
+  activeTabId = tabId;
 
-  // Scroll-spy active section underline dot
-  let activeLink = null;
-  const probeY = window.scrollY + window.innerHeight * 0.34;
-  for (const link of sectionLinks) {
-    const sec = document.getElementById(link.dataset.section);
-    if (sec && sec.offsetTop <= probeY && sec.offsetTop + sec.offsetHeight > probeY) {
-      activeLink = link;
+  let activeBtn = null;
+  sideTabs.forEach((t) => {
+    const isMatch = t.dataset.tab === tabId;
+    t.classList.toggle('active', isMatch);
+    t.setAttribute('aria-selected', String(isMatch));
+    if (isMatch) activeBtn = t;
+  });
+  moveSidePill(activeBtn, immediate);
+
+  document.querySelectorAll('.tab-view').forEach((v) => {
+    const isTarget = v.id === tabId;
+    v.classList.remove('enter-down', 'enter-up');
+    v.classList.toggle('active', isTarget);
+    if (isTarget && !immediate && changed) {
+      void v.offsetWidth;
+      v.classList.add(dirClass);
     }
+  });
+
+  workspace.scrollTop = 0;
+  scrollProgSpring.setImmediate(0);
+
+  if (updateHash && window.location.hash !== `#${tabId}`) {
+    history.replaceState(null, '', `#${tabId}`);
   }
-  sectionLinks.forEach((l) => l.classList.toggle('is-current', l === activeLink));
-  if (activeLink) {
-    const cx = activeLink.offsetLeft + activeLink.offsetWidth / 2 - 7;
-    navDotX.animateTo(cx);
-    navActiveDot.style.opacity = '1';
-  } else {
-    navActiveDot.style.opacity = '0';
-  }
+
+  // Re-sync measurements for controls that were hidden before switching to this tab
+  requestAnimationFrame(() => {
+    if (tabId === 'overview') {
+      const act = traceTabsWrap.querySelector('.trace-tab.active');
+      if (act) positionTraceThumb(act, true);
+      if (prefersReducedMotion()) drawTraceFrame(0);
+    } else if (tabId === 'telemetry') {
+      const act = segWrap.querySelector('.seg-btn.active');
+      if (act) positionSegThumb(act, true);
+    } else if (tabId === 'changes') {
+      const act = filterGroup.querySelector('.filter-chip.active');
+      if (act) positionFilterPill(act, true);
+    }
+    syncWorkspaceScroll();
+  });
 }
-window.addEventListener('scroll', syncTopbar, { passive: true });
-syncTopbar();
+
+sideTabs.forEach((btn) => {
+  btn.addEventListener('pointerdown', () => switchTab(btn.dataset.tab));
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+document.querySelectorAll('[data-tab-link]').forEach((el) => {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchTab(el.dataset.tabLink);
+  });
+});
+
+window.addEventListener('hashchange', () => {
+  const h = window.location.hash.replace(/^#/, '');
+  if (TAB_ORDER.includes(h)) switchTab(h, { updateHash: false });
+});
 
 // Subtle magnetic micro-pull (±3px) on primary/cobalt CTA buttons
 if (!prefersReducedMotion()) {
@@ -297,44 +384,9 @@ if (!prefersReducedMotion()) {
     });
   });
 }
-const navPillX = new Spring1D(0, {
-  damping: 1.0,
-  response: 0.24,
-  onUpdate: (x) => {
-    navHoverPill.style.transform = `translate3d(${x.toFixed(2)}px, -50%, 0)`;
-  },
-});
-const navPillW = new Spring1D(64, {
-  damping: 1.0,
-  response: 0.24,
-  onUpdate: (w) => {
-    navHoverPill.style.width = `${w.toFixed(2)}px`;
-  },
-});
-
-let navPillVisible = false;
-navLinks.forEach((link) => {
-  link.addEventListener('pointerenter', () => {
-    const x = link.offsetLeft;
-    const w = link.offsetWidth;
-    if (!navPillVisible) {
-      navPillX.setImmediate(x);
-      navPillW.setImmediate(w);
-      navPillVisible = true;
-    } else {
-      navPillX.animateTo(x);
-      navPillW.animateTo(w);
-    }
-    navHoverPill.style.opacity = '1';
-  });
-});
-primaryNav.addEventListener('pointerleave', () => {
-  navHoverPill.style.opacity = '0';
-  navPillVisible = false;
-});
 
 /* --------------------------------------------------------------------------
-   3. Signature Interactive Frametime Oscilloscope (Real Match Numbers)
+   3. Signature Interactive Frametime Oscilloscope (Orange -> Cobalt)
    -------------------------------------------------------------------------- */
 const canvas = document.getElementById('frametime-canvas');
 const ctx = canvas.getContext('2d');
@@ -346,8 +398,6 @@ const traceDipsEl = document.getElementById('trace-dips');
 const traceLatEl = document.getElementById('trace-lat');
 const vbsChk = document.getElementById('demo-vbs-chk');
 
-let traceMode = 'tuned'; // 'stock' | 'tuned'
-// 0 = stock (crimson jagged spikes), 1 = tuned (cobalt flatline)
 let blendVal = 1;
 const blendSpring = new Spring1D(1, {
   damping: 1.0,
@@ -370,6 +420,7 @@ const traceThumbX = new Spring1D(0, {
 function positionTraceThumb(btn, immediate = false) {
   const r = btn.getBoundingClientRect();
   const pr = traceTabsWrap.getBoundingClientRect();
+  if (r.width === 0) return;
   const pad = parseFloat(getComputedStyle(traceTabsWrap).paddingLeft) || 0;
   traceThumb.style.width = `${r.width}px`;
   const x = r.left - pr.left - pad;
@@ -409,7 +460,6 @@ function updateTraceReadouts() {
 }
 
 function selectTraceMode(mode, immediate = false) {
-  traceMode = mode;
   traceButtons.forEach((b) => {
     const active = b.dataset.mode === mode;
     b.classList.toggle('active', active);
@@ -424,9 +474,7 @@ traceButtons.forEach((b) => {
   b.addEventListener('click', () => selectTraceMode(b.dataset.mode));
 });
 vbsChk.addEventListener('change', () => vbsBlendSpring.animateTo(vbsChk.checked ? 1 : 0));
-requestAnimationFrame(() => selectTraceMode('tuned', true));
 
-// Interactive pointer crosshair + click ripple inside frametime trace
 let hoverNormX = null;
 const clickRipples = [];
 canvas.addEventListener('pointermove', (e) => {
@@ -445,12 +493,10 @@ canvas.addEventListener('pointerleave', () => {
   if (prefersReducedMotion()) drawTraceFrame(0);
 });
 
-// Deterministic synthetic waveform representing real TDM frametimes (2ms..10ms scale)
 const SAMPLES = 120;
 function sampleStockMs(idx, phase) {
   const t = idx * 0.34 + phase;
   const base = 4.65 + Math.sin(t * 0.7) * 0.55 + Math.cos(t * 1.9) * 0.4;
-  // Periodic mid-fight frame spikes above 7-9 ms
   const spike = Math.pow(Math.max(0, Math.sin(t * 0.47 + 0.8)), 10) * 4.4
               + Math.pow(Math.max(0, Math.cos(t * 0.83)), 14) * 3.1;
   return Math.min(9.6, base + spike);
@@ -465,9 +511,10 @@ function sampleTunedMs(idx, phase) {
 }
 
 function drawTraceFrame(phase) {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (!w || !h) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = canvas.clientWidth || 640;
-  const h = canvas.clientHeight || 235;
   if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
@@ -480,7 +527,6 @@ function drawTraceFrame(phase) {
     return h - ((clamped - 1.8) / (10.2 - 1.8)) * (h - 24) - 12;
   };
 
-  // Subtle horizontal reference grid
   ctx.strokeStyle = 'rgba(226, 234, 248, 0.06)';
   ctx.lineWidth = 1;
   for (const g of [3, 6, 8]) {
@@ -491,7 +537,6 @@ function drawTraceFrame(phase) {
     ctx.stroke();
   }
 
-  // 240 Hz (4.16 ms) budget line
   const y240 = msToY(4.16);
   ctx.save();
   ctx.strokeStyle = 'rgba(108, 178, 255, 0.45)';
@@ -502,7 +547,6 @@ function drawTraceFrame(phase) {
   ctx.stroke();
   ctx.restore();
 
-  // Ghost stock trace when tuned is active so the improvement is unmistakable
   if (blendVal > 0.15) {
     ctx.beginPath();
     for (let i = 0; i < SAMPLES; i++) {
@@ -516,7 +560,6 @@ function drawTraceFrame(phase) {
     ctx.stroke();
   }
 
-  // Primary blended waveform (Signal Orange -> Calibration Cobalt)
   const r = Math.round(249 + (43 - 249) * blendVal);
   const g = Math.round(106 + (127 - 106) * blendVal);
   const b = Math.round(27 + (255 - 27) * blendVal);
@@ -539,7 +582,6 @@ function drawTraceFrame(phase) {
   ctx.lineJoin = 'round';
   ctx.stroke();
 
-  // Soft vertical fill beneath curve
   ctx.lineTo(w, h);
   ctx.lineTo(0, h);
   ctx.closePath();
@@ -549,13 +591,11 @@ function drawTraceFrame(phase) {
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Leading-edge oscilloscope bead
   ctx.beginPath();
   ctx.arc(lastX - 2, lastY, 3.5, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
 
-  // Decaying inspection click ripples
   const nowTs = performance.now();
   for (let ri = clickRipples.length - 1; ri >= 0; ri--) {
     const rip = clickRipples[ri];
@@ -575,7 +615,6 @@ function drawTraceFrame(phase) {
     ctx.stroke();
   }
 
-  // Interactive hover crosshair & floating frametime readout
   if (hoverNormX !== null) {
     const idx = hoverNormX * (SAMPLES - 1);
     const ms = sampleStockMs(idx, phase) * (1 - blendVal) + sampleTunedMs(idx, phase) * blendVal;
@@ -621,16 +660,15 @@ function animateTrace(ts) {
   if (!lastTraceTs) lastTraceTs = ts;
   const dt = Math.min(0.05, (ts - lastTraceTs) / 1000);
   lastTraceTs = ts;
-  tracePhase += dt * 1.15;
-  drawTraceFrame(tracePhase);
+  if (activeTabId === 'overview') {
+    tracePhase += dt * 1.15;
+    drawTraceFrame(tracePhase);
+  }
   requestAnimationFrame(animateTrace);
 }
 
-if (prefersReducedMotion()) {
-  drawTraceFrame(0);
-} else {
-  requestAnimationFrame(animateTrace);
-}
+if (prefersReducedMotion()) drawTraceFrame(0);
+else requestAnimationFrame(animateTrace);
 
 /* --------------------------------------------------------------------------
    4. Dry-Run PowerShell Log Drawer
@@ -722,6 +760,7 @@ const segThumbX = new Spring1D(0, {
 function positionSegThumb(btn, immediate = false) {
   const r = btn.getBoundingClientRect();
   const pr = segWrap.getBoundingClientRect();
+  if (r.width === 0) return;
   const pad = parseFloat(getComputedStyle(segWrap).paddingLeft) || 0;
   segThumb.style.width = `${r.width}px`;
   const x = r.left - pr.left - pad;
@@ -755,16 +794,8 @@ segButtons.forEach((b) => {
   b.addEventListener('click', () => selectBenchView(b));
 });
 
-window.addEventListener('resize', () => {
-  const activeTrace = traceTabsWrap.querySelector('.trace-tab.active');
-  if (activeTrace) positionTraceThumb(activeTrace, true);
-  const activeBench = segWrap.querySelector('.seg-btn.active');
-  if (activeBench) positionSegThumb(activeBench, true);
-});
-requestAnimationFrame(() => selectBenchView(segButtons[0], true));
-
 /* --------------------------------------------------------------------------
-   6. 5-Stage Progression Slider (1:1 Pointer Drag + Momentum + Click Stops)
+   6. 5-Stage Progression Slider
    -------------------------------------------------------------------------- */
 const STAGES = [
   { fps: 220, delta: 'Baseline', baseline: true, cap: 'Stock Windows 11 with NVIDIA 120 FPS overlay capture, 65W PL1 limit, and VBS/HVCI running.' },
@@ -784,6 +815,8 @@ const stopBtns = [...track.querySelectorAll('.stage-stop')];
 const detentDots = [...document.querySelectorAll('#scrubber-detents .detent-dot')];
 
 let stageIdx = 4;
+const stageNorm = (i) => (i + 0.5) / STAGES.length;
+
 const stageSpring = new Spring1D(0.9, {
   damping: 0.9,
   response: 0.3,
@@ -802,8 +835,6 @@ const stageFpsSpring = new Spring1D(298, {
     sFps.innerHTML = `${Math.round(v)} <small>FPS avg</small>`;
   },
 });
-
-const stageNorm = (i) => (i + 0.5) / STAGES.length;
 
 function applyStage(idx, immediate = false) {
   const changed = idx !== stageIdx;
@@ -837,7 +868,7 @@ stopBtns.forEach((btn) => {
 
 let dragging = false;
 let grabOffset = 0;
-let history = [];
+let historyPts = [];
 
 track.addEventListener('pointerdown', (e) => {
   track.setPointerCapture(e.pointerId);
@@ -856,7 +887,7 @@ track.addEventListener('pointerdown', (e) => {
     stageSpring.setImmediate(clamped);
     applyStage(Math.max(0, Math.min(STAGES.length - 1, Math.floor(raw * STAGES.length))));
   }
-  history = [{ x: e.clientX, t: performance.now() }];
+  historyPts = [{ x: e.clientX, t: performance.now() }];
 });
 
 track.addEventListener('pointermove', (e) => {
@@ -873,8 +904,8 @@ track.addEventListener('pointermove', (e) => {
   if (nearest !== stageIdx) applyStage(nearest);
 
   const now = performance.now();
-  history.push({ x: e.clientX, t: now });
-  while (history.length > 5 && now - history[0].t > 100) history.shift();
+  historyPts.push({ x: e.clientX, t: now });
+  while (historyPts.length > 5 && now - historyPts[0].t > 100) historyPts.shift();
 });
 
 function endDrag() {
@@ -883,9 +914,9 @@ function endDrag() {
   track.classList.remove('is-dragging');
   const rect = track.getBoundingClientRect();
   let vel = 0;
-  if (history.length >= 2) {
-    const dt = (history[history.length - 1].t - history[0].t) / 1000;
-    if (dt > 0.005) vel = (history[history.length - 1].x - history[0].x) / dt;
+  if (historyPts.length >= 2) {
+    const dt = (historyPts[historyPts.length - 1].t - historyPts[0].t) / 1000;
+    if (dt > 0.005) vel = (historyPts[historyPts.length - 1].x - historyPts[0].x) / dt;
   }
   const projected = stageSpring.value * rect.width + projectMomentum(vel, 0.99);
   const target = Math.max(0, Math.min(STAGES.length - 1, Math.floor((projected / rect.width) * STAGES.length)));
@@ -935,7 +966,7 @@ const filterPillW = new Spring1D(64, {
 });
 
 function positionFilterPill(chip, immediate = false) {
-  if (!chip || !filterPill) return;
+  if (!chip || !filterPill || chip.offsetWidth === 0) return;
   const x = chip.offsetLeft - 4;
   const w = chip.offsetWidth;
   filterPill.style.top = `${chip.offsetTop}px`;
@@ -1030,14 +1061,6 @@ filterChips.forEach((chip) => {
   });
 });
 
-window.addEventListener('resize', () => {
-  const activeChip = filterGroup.querySelector('.filter-chip.active');
-  if (activeChip) positionFilterPill(activeChip, true);
-});
-
-renderManifest();
-requestAnimationFrame(() => positionFilterPill(filterChips[0], true));
-
 /* --------------------------------------------------------------------------
    8. Smooth Animated FAQ <details> Disclosure
    -------------------------------------------------------------------------- */
@@ -1051,20 +1074,18 @@ if (!prefersReducedMotion()) {
       if (details.open) {
         const anim = content.animate(
           [
-            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.25rem' },
+            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.2rem' },
             { opacity: 0, maxHeight: '0px', marginBottom: '0px' },
           ],
           { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
         );
-        anim.onfinish = () => {
-          details.open = false;
-        };
+        anim.onfinish = () => { details.open = false; };
       } else {
         details.open = true;
         content.animate(
           [
             { opacity: 0, maxHeight: '0px', marginBottom: '0px' },
-            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.25rem' },
+            { opacity: 1, maxHeight: `${content.scrollHeight}px`, marginBottom: '1.2rem' },
           ],
           { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
         );
@@ -1072,3 +1093,26 @@ if (!prefersReducedMotion()) {
     });
   });
 }
+
+/* --------------------------------------------------------------------------
+   9. Initial Boot & Resize Sync
+   -------------------------------------------------------------------------- */
+window.addEventListener('resize', () => {
+  const activeSide = sideNav.querySelector('.side-tab.active');
+  if (activeSide) moveSidePill(activeSide, true);
+  const activeTrace = traceTabsWrap.querySelector('.trace-tab.active');
+  if (activeTrace) positionTraceThumb(activeTrace, true);
+  const activeBench = segWrap.querySelector('.seg-btn.active');
+  if (activeBench) positionSegThumb(activeBench, true);
+  const activeChip = filterGroup.querySelector('.filter-chip.active');
+  if (activeChip) positionFilterPill(activeChip, true);
+});
+
+selectBenchView(segButtons[0], true);
+renderManifest();
+requestAnimationFrame(() => {
+  selectTraceMode('tuned', true);
+  const initialHash = window.location.hash.replace(/^#/, '');
+  const startTab = TAB_ORDER.includes(initialHash) ? initialHash : 'overview';
+  switchTab(startTab, { immediate: true, updateHash: false });
+});

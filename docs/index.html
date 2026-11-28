@@ -12,372 +12,419 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header id="topbar" class="topbar">
-    <div class="container topbar-inner">
-      <div class="brand-group">
-        <a href="#top" class="brand" aria-label="BareFrame home">
-          <img src="assets/bareframe-pfp.png" alt="BareFrame" class="brand-mark" width="26" height="26" />
-          <span>BareFrame</span>
+  <div class="site-shell" id="top">
+    <!-- Left Frosted Side Tabs -->
+    <aside class="sidebar" aria-label="Site navigation">
+      <div class="sidebar-top">
+        <a href="#overview" class="brand" data-tab-link="overview" aria-label="BareFrame home">
+          <img src="assets/bareframe-pfp.png" alt="BareFrame" class="brand-mark" width="28" height="28" />
+          <div class="brand-text">
+            <span class="brand-name">BareFrame</span>
+            <span class="brand-badges">
+              <span class="beta-label">Beta</span>
+              <span class="version-label">v0.1.3</span>
+            </span>
+          </div>
         </a>
-        <span class="beta-label">Beta</span>
-        <span class="version-label">v0.1.3</span>
+
+        <nav class="side-nav" id="side-nav" role="tablist" aria-orientation="vertical" aria-label="Sections">
+          <div class="side-active-pill" id="side-active-pill" aria-hidden="true"></div>
+          <div class="side-hover-pill" id="side-hover-pill" aria-hidden="true"></div>
+
+          <button type="button" class="side-tab active" role="tab" aria-selected="true" data-tab="overview">
+            <svg class="side-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="6" height="6" rx="1.5" />
+              <rect x="11" y="3" width="6" height="6" rx="1.5" />
+              <rect x="3" y="11" width="6" height="6" rx="1.5" />
+              <rect x="11" y="11" width="6" height="6" rx="1.5" />
+            </svg>
+            <span>Overview</span>
+          </button>
+
+          <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="telemetry">
+            <svg class="side-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="15" x2="5" y2="10" />
+              <line x1="10" y1="15" x2="10" y2="5" />
+              <line x1="15" y1="15" x2="15" y2="8" />
+            </svg>
+            <span>Benchmarks</span>
+          </button>
+
+          <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="changes">
+            <svg class="side-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="6" x2="16" y2="6" />
+              <circle cx="8" cy="6" r="2" fill="#0f141d" />
+              <line x1="4" y1="14" x2="16" y2="14" />
+              <circle cx="13" cy="14" r="2" fill="#0f141d" />
+            </svg>
+            <span>12 Tweaks</span>
+            <span class="side-count mono">12</span>
+          </button>
+
+          <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="download">
+            <svg class="side-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 3.5v9" />
+              <polyline points="6.5 9.5 10 13 13.5 9.5" />
+              <path d="M4 15.5h12" />
+            </svg>
+            <span>Download</span>
+          </button>
+
+          <button type="button" class="side-tab" role="tab" aria-selected="false" data-tab="questions">
+            <svg class="side-svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10" cy="10" r="7" />
+              <path d="M8.3 8a1.9 1.9 0 0 1 3.5.9c0 1.2-1.8 1.4-1.8 2.6" />
+              <circle cx="10" cy="14.2" r="0.6" fill="currentColor" stroke="none" />
+            </svg>
+            <span>Questions</span>
+          </button>
+        </nav>
       </div>
 
-      <nav class="nav" id="primary-nav" aria-label="Primary">
-        <div class="nav-hover-pill" id="nav-hover-pill" aria-hidden="true"></div>
-        <div class="nav-active-dot" id="nav-active-dot" aria-hidden="true"></div>
-        <a href="#telemetry" class="nav-link" data-section="telemetry">Benchmarks</a>
-        <a href="#changes" class="nav-link" data-section="changes">What changes</a>
-        <a href="#questions" class="nav-link" data-section="questions">Questions</a>
-        <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener" class="nav-link">GitHub</a>
-        <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="nav-link nav-kofi">Ko-fi</a>
-        <a href="#download" class="nav-download">Download</a>
-      </nav>
-    </div>
-    <div class="scroll-progress-rail" aria-hidden="true">
-      <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
-    </div>
-  </header>
-
-  <main id="top">
-    <!-- HERO: Direct editorial prose + one bold signature artifact (Live Frametime Trace) -->
-    <section class="hero">
-      <div class="container hero-layout">
-        <div class="hero-copy">
-          <div class="hero-beta-note">Public beta (v0.1.3)</div>
-          <h1 class="hero-title">Steady frames on stock Windows.</h1>
-
-          <p class="hero-lead">
-            BareFrame applies 12 documented Windows, power, USB, Ethernet, and game config adjustments in one pass. It creates a System Restore Point and exports registry backups first, skips settings that do not fit your hardware, and reverts cleanly back to stock whenever you want.
-          </p>
-
-          <div class="hero-actions">
-            <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary">
-              Download installer
-            </a>
-            <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Portable.exe" class="btn btn-secondary">
-              Download portable
-            </a>
-            <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener" class="plain-link">
-              Read source on GitHub
-            </a>
-          </div>
-
-          <ul class="hero-facts" aria-label="Platform compatibility">
-            <li>
-              <span class="fact-key">Platform</span>
-              <span class="fact-val">Windows 10 and 11 (64-bit), MIT license, no background service</span>
-            </li>
-            <li>
-              <span class="fact-key">Game profiles</span>
-              <span class="fact-val">VALORANT, Counter-Strike 2, Fortnite, Apex Legends, Rainbow Six Siege</span>
-            </li>
-            <li>
-              <span class="fact-key">Anti-cheat</span>
-              <span class="fact-val">Safe with Vanguard, FACEIT AC, EAC, and BattlEye (zero drivers or memory hooks)</span>
-            </li>
-          </ul>
+      <div class="sidebar-bottom">
+        <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary btn-side-dl">
+          Download installer
+        </a>
+        <div class="side-ext-links">
+          <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="side-kofi">Ko-fi</a>
+          <a href="https://github.com/BareFrame/BareFrame/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Signing</a>
         </div>
+        <div class="side-license">Windows 10 &amp; 11 (64-bit), MIT</div>
+      </div>
+    </aside>
 
-        <!-- The One Bold Element: Interactive Frametime Oscilloscope -->
-        <div id="preview" class="trace-stage" aria-label="Interactive frametime comparison">
-          <div class="trace-head">
-            <div>
-              <div class="trace-title">Live frametime trace</div>
-              <div class="trace-sub" id="trace-subtitle">Measured in VALORANT Team Deathmatch (240 Hz target = 4.16 ms)</div>
+    <!-- Main Tabbed Workspace -->
+    <main class="workspace" id="workspace">
+      <div class="scroll-progress-rail" aria-hidden="true">
+        <div id="scroll-progress-bar" class="scroll-progress-bar"></div>
+      </div>
+
+      <!-- TAB 1: OVERVIEW (Hero + Live Frametime Trace) -->
+      <section id="overview" class="tab-view active" role="tabpanel" aria-label="Overview">
+        <div class="view-inner hero-layout">
+          <div class="hero-copy">
+            <div class="hero-beta-note">Public beta (v0.1.3)</div>
+            <h1 class="hero-title">Steady frames on stock Windows.</h1>
+
+            <p class="hero-lead">
+              BareFrame applies 12 documented Windows, power, USB, Ethernet, and game config adjustments in one pass. It creates a System Restore Point and exports registry backups first, skips settings that do not fit your hardware, and reverts cleanly back to stock whenever you want.
+            </p>
+
+            <div class="hero-actions">
+              <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary">
+                Download installer
+              </a>
+              <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Portable.exe" class="btn btn-secondary">
+                Download portable
+              </a>
+              <button type="button" class="plain-link" data-tab-link="changes">
+                Inspect all 12 tweaks
+              </button>
             </div>
-            <div class="trace-switch" id="trace-mode-switch" role="tablist" aria-label="Frametime profile">
-              <div class="trace-switch-thumb" id="trace-switch-thumb" aria-hidden="true"></div>
-              <button type="button" class="trace-tab" role="tab" aria-selected="false" data-mode="stock">Stock Windows</button>
-              <button type="button" class="trace-tab active" role="tab" aria-selected="true" data-mode="tuned">With BareFrame</button>
-            </div>
+
+            <ul class="hero-facts" aria-label="Platform compatibility">
+              <li>
+                <span class="fact-key">Platform</span>
+                <span class="fact-val">Windows 10 and 11 (64-bit), MIT license, no background service</span>
+              </li>
+              <li>
+                <span class="fact-key">Game profiles</span>
+                <span class="fact-val">VALORANT, Counter-Strike 2, Fortnite, Apex Legends, Rainbow Six Siege</span>
+              </li>
+              <li>
+                <span class="fact-key">Anti-cheat</span>
+                <span class="fact-val">Safe with Vanguard, FACEIT AC, EAC, and BattlEye (zero drivers or memory hooks)</span>
+              </li>
+            </ul>
           </div>
 
-          <div class="trace-canvas-wrap">
-            <canvas id="frametime-canvas" width="640" height="250" aria-label="Real-time frametime graph"></canvas>
-            <div class="trace-axis-label trace-axis-top mono">10 ms</div>
-            <div class="trace-axis-label trace-axis-ref mono">4.16 ms (240 Hz)</div>
-            <div class="trace-axis-label trace-axis-bot mono">2 ms</div>
-          </div>
-
-          <div class="trace-readouts">
-            <div class="readout-item">
-              <span class="readout-label">Average frame rate</span>
-              <span class="readout-value tabular" id="trace-fps">298 FPS</span>
+          <!-- Signature Bold Element: Interactive Frametime Oscilloscope -->
+          <div id="preview" class="trace-stage" aria-label="Interactive frametime comparison">
+            <div class="trace-head">
+              <div>
+                <div class="trace-title">Live frametime trace</div>
+                <div class="trace-sub" id="trace-subtitle">Measured in VALORANT Team Deathmatch (240 Hz target = 4.16 ms)</div>
+              </div>
+              <div class="trace-switch" id="trace-mode-switch" role="tablist" aria-label="Frametime profile">
+                <div class="trace-switch-thumb" id="trace-switch-thumb" aria-hidden="true"></div>
+                <button type="button" class="trace-tab" role="tab" aria-selected="false" data-mode="stock">Stock Windows</button>
+                <button type="button" class="trace-tab active" role="tab" aria-selected="true" data-mode="tuned">With BareFrame</button>
+              </div>
             </div>
-            <div class="readout-item">
-              <span class="readout-label">Frames under 240 FPS</span>
-              <span class="readout-value tabular" id="trace-dips">5.2%</span>
-            </div>
-            <div class="readout-item">
-              <span class="readout-label">Mean engine latency</span>
-              <span class="readout-value tabular" id="trace-lat">4.68 ms</span>
-            </div>
-          </div>
 
-          <div class="trace-footer">
-            <label class="vbs-inline" for="demo-vbs-chk">
-              <span class="apple-switch">
-                <input type="checkbox" id="demo-vbs-chk" checked />
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-              </span>
-              <span>Include optional Bare-Metal mode (disables VBS and HVCI, keeps TPM 2.0 and Secure Boot on)</span>
-            </label>
-            <button id="btn-run-dry" type="button" class="btn-inline">Run dry-run log</button>
-          </div>
+            <div class="trace-canvas-wrap">
+              <canvas id="frametime-canvas" width="640" height="250" aria-label="Real-time frametime graph"></canvas>
+              <div class="trace-axis-label trace-axis-top mono">10 ms</div>
+              <div class="trace-axis-label trace-axis-ref mono">4.16 ms (240 Hz)</div>
+              <div class="trace-axis-label trace-axis-bot mono">2 ms</div>
+            </div>
 
-          <div id="dry-run-collapse" class="dry-run-collapse">
-            <div class="dry-run-collapse-inner">
-              <div id="dry-run-drawer" class="dry-run-drawer">
-                <div class="dry-run-bar-row">
-                  <span id="demo-progress-text">Preparing backup…</span>
-                  <span id="demo-progress-pct" class="mono tabular">0%</span>
+            <div class="trace-readouts">
+              <div class="readout-item">
+                <span class="readout-label">Average frame rate</span>
+                <span class="readout-value tabular" id="trace-fps">298 FPS</span>
+              </div>
+              <div class="readout-item">
+                <span class="readout-label">Frames under 240 FPS</span>
+                <span class="readout-value tabular" id="trace-dips">5.2%</span>
+              </div>
+              <div class="readout-item">
+                <span class="readout-label">Mean engine latency</span>
+                <span class="readout-value tabular" id="trace-lat">4.68 ms</span>
+              </div>
+            </div>
+
+            <div class="trace-footer">
+              <label class="vbs-inline" for="demo-vbs-chk">
+                <span class="apple-switch">
+                  <input type="checkbox" id="demo-vbs-chk" checked />
+                  <span class="switch-track"><span class="switch-thumb"></span></span>
+                </span>
+                <span>Include optional Bare-Metal mode (disables VBS and HVCI, keeps TPM 2.0 and Secure Boot on)</span>
+              </label>
+              <button id="btn-run-dry" type="button" class="btn-inline">Run dry-run log</button>
+            </div>
+
+            <div id="dry-run-collapse" class="dry-run-collapse">
+              <div class="dry-run-collapse-inner">
+                <div id="dry-run-drawer" class="dry-run-drawer">
+                  <div class="dry-run-bar-row">
+                    <span id="demo-progress-text">Preparing backup…</span>
+                    <span id="demo-progress-pct" class="mono tabular">0%</span>
+                  </div>
+                  <div class="dry-run-rail">
+                    <div id="demo-progress-bar" class="dry-run-fill"></div>
+                  </div>
+                  <pre id="demo-console" class="dry-run-console mono"></pre>
                 </div>
-                <div class="dry-run-rail">
-                  <div id="demo-progress-bar" class="dry-run-fill"></div>
-                </div>
-                <pre id="demo-console" class="dry-run-console mono"></pre>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- BENCHMARKS: Clean typographic comparison table + 5-stage slider -->
-    <section id="telemetry" class="section">
-      <div class="container">
-        <div class="section-intro">
-          <div>
-            <h2>Measured in real matches, not synthetic scores</h2>
-            <p class="section-lead">
-              Every figure below comes directly from local VALORANT <code>ShooterGame.log</code> frame dumps captured on one mid-range desktop before and after each optimization stage.
-            </p>
-          </div>
-          <div class="rig-note">
-            <div class="rig-note-title">Test machine</div>
-            <p>Intel Core i5-14400F, RTX 4060, 32 GB DDR5-6000, ASUS PRIME B760M-A AX6 II, 400 Hz display on Windows 11. Low-end and high-end community test logs will be added next.</p>
-          </div>
-        </div>
-
-        <div class="seg-row">
-          <div class="seg-control" id="bench-segmented" role="tablist" aria-label="Benchmark dataset">
-            <div class="seg-thumb" id="segmented-thumb" aria-hidden="true"></div>
-            <button type="button" class="seg-btn active" role="tab" aria-selected="true" data-view="tdm">Team Deathmatch</button>
-            <button type="button" class="seg-btn" role="tab" aria-selected="false" data-view="comp">5v5 Competitive</button>
-            <button type="button" class="seg-btn" role="tab" aria-selected="false" data-view="dips">Clocks and memory</button>
-          </div>
-          <span class="seg-source">Parsed from ShooterGame.log</span>
-        </div>
-
-        <div class="compare-table-wrap">
-          <table class="compare-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Stock Windows</th>
-                <th>With BareFrame</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody id="compare-tbody"></tbody>
-          </table>
-        </div>
-
-        <!-- 5-Stage Progression Slider (Honest attribution of BIOS vs Windows vs VBS) -->
-        <div class="stage-box">
-          <div class="stage-box-top">
+      <!-- TAB 2: BENCHMARKS -->
+      <section id="telemetry" class="tab-view" role="tabpanel" aria-label="Benchmarks">
+        <div class="view-inner">
+          <div class="section-intro">
             <div>
-              <h3>Where each frame came from</h3>
-              <p id="scrubber-caption" class="stage-caption">
-                Bare-Metal VBS=0 active. Only 5.2% of frames dipped below 240 FPS and 3,652 frames exceeded 480 FPS.
+              <h2>Measured in real matches, not synthetic scores</h2>
+              <p class="section-lead">
+                Every figure below comes directly from local VALORANT <code>ShooterGame.log</code> frame dumps captured on one mid-range desktop before and after each optimization stage.
               </p>
             </div>
-            <div class="stage-figures">
-              <div class="stage-fps tabular" id="scrubber-fps">298 <small>FPS avg</small></div>
-              <span class="stage-delta tabular" id="scrubber-delta">−84% dips</span>
+            <div class="rig-note">
+              <div class="rig-note-title">Test machine</div>
+              <p>Intel Core i5-14400F, RTX 4060, 32 GB DDR5-6000, ASUS PRIME B760M-A AX6 II, 400 Hz display on Windows 11. Low-end and high-end community test logs will be added next.</p>
             </div>
           </div>
 
-          <div class="scrubber-track" id="scrubber-track" role="slider" tabindex="0" aria-label="Optimization stage" aria-valuemin="0" aria-valuemax="4" aria-valuenow="4">
-            <div class="scrubber-rail"></div>
-            <div class="scrubber-fill" id="scrubber-fill"></div>
-            <div class="scrubber-detents" id="scrubber-detents" aria-hidden="true">
-              <span class="detent-dot active"></span>
-              <span class="detent-dot active"></span>
-              <span class="detent-dot active"></span>
-              <span class="detent-dot active"></span>
-              <span class="detent-dot active"></span>
+          <div class="seg-row">
+            <div class="seg-control" id="bench-segmented" role="tablist" aria-label="Benchmark dataset">
+              <div class="seg-thumb" id="segmented-thumb" aria-hidden="true"></div>
+              <button type="button" class="seg-btn active" role="tab" aria-selected="true" data-view="tdm">Team Deathmatch</button>
+              <button type="button" class="seg-btn" role="tab" aria-selected="false" data-view="comp">5v5 Competitive</button>
+              <button type="button" class="seg-btn" role="tab" aria-selected="false" data-view="dips">Clocks and memory</button>
             </div>
-            <div class="scrubber-knob" id="scrubber-knob" aria-hidden="true"></div>
-            <div class="scrubber-labels">
-              <button type="button" class="stage-stop" data-stage="0">Stock</button>
-              <button type="button" class="stage-stop" data-stage="1">Windows tweaks</button>
-              <button type="button" class="stage-stop" data-stage="2">BIOS power limit</button>
-              <button type="button" class="stage-stop" data-stage="3">HVCI off</button>
-              <button type="button" class="stage-stop active" data-stage="4">Bare-Metal</button>
+            <span class="seg-source">Parsed from ShooterGame.log</span>
+          </div>
+
+          <div class="compare-table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Stock Windows</th>
+                  <th>With BareFrame</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody id="compare-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="stage-box">
+            <div class="stage-box-top">
+              <div>
+                <h3>Where each frame came from</h3>
+                <p id="scrubber-caption" class="stage-caption">
+                  Bare-Metal VBS=0 active. Only 5.2% of frames dipped below 240 FPS and 3,652 frames exceeded 480 FPS.
+                </p>
+              </div>
+              <div class="stage-figures">
+                <div class="stage-fps tabular" id="scrubber-fps">298 <small>FPS avg</small></div>
+                <span class="stage-delta tabular" id="scrubber-delta">−84% dips</span>
+              </div>
+            </div>
+
+            <div class="scrubber-track" id="scrubber-track" role="slider" tabindex="0" aria-label="Optimization stage" aria-valuemin="0" aria-valuemax="4" aria-valuenow="4">
+              <div class="scrubber-rail"></div>
+              <div class="scrubber-fill" id="scrubber-fill"></div>
+              <div class="scrubber-detents" id="scrubber-detents" aria-hidden="true">
+                <span class="detent-dot active"></span>
+                <span class="detent-dot active"></span>
+                <span class="detent-dot active"></span>
+                <span class="detent-dot active"></span>
+                <span class="detent-dot active"></span>
+              </div>
+              <div class="scrubber-knob" id="scrubber-knob" aria-hidden="true"></div>
+              <div class="scrubber-labels">
+                <button type="button" class="stage-stop" data-stage="0">Stock</button>
+                <button type="button" class="stage-stop" data-stage="1">Windows tweaks</button>
+                <button type="button" class="stage-stop" data-stage="2">BIOS power limit</button>
+                <button type="button" class="stage-stop" data-stage="3">HVCI off</button>
+                <button type="button" class="stage-stop active" data-stage="4">Bare-Metal</button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 12 TWEAKS MANIFEST -->
-    <section id="changes" class="section section-alt">
-      <div class="container">
-        <div class="section-intro">
-          <div>
-            <h2>All 12 tweaks, inspectable before you download</h2>
+      <!-- TAB 3: 12 TWEAKS -->
+      <section id="changes" class="tab-view" role="tabpanel" aria-label="12 Tweaks">
+        <div class="view-inner">
+          <div class="section-intro">
+            <div>
+              <h2>All 12 tweaks, inspectable before you download</h2>
+              <p class="section-lead">
+                Every optimization uses documented Windows APIs and adapts to the game profile you select on first launch. Open any row to read the exact registry keys, commands, and rollback behavior from <code>src/engine/tweaks.js</code>.
+              </p>
+            </div>
+            <div class="filter-group" id="tweak-filters" role="group" aria-label="Filter optimizations">
+              <div class="filter-pill" id="filter-pill" aria-hidden="true"></div>
+              <button type="button" class="filter-chip active" data-cat="all">All (12)</button>
+              <button type="button" class="filter-chip" data-cat="Kernel & CPU">Kernel &amp; CPU</button>
+              <button type="button" class="filter-chip" data-cat="Power & Hardware">Power &amp; hardware</button>
+              <button type="button" class="filter-chip" data-cat="Network & Memory">Network &amp; memory</button>
+              <button type="button" class="filter-chip" data-cat="Gaming & Opt-In">Game &amp; opt-in</button>
+            </div>
+          </div>
+
+          <div id="manifest-rows" class="manifest-list"></div>
+
+          <div class="tools-prose">
+            <div class="tool-col">
+              <h3>Built-in 35-second throttle detector</h3>
+              <p>Measures sustained P-core clock speed past Intel and AMD's 28-second boost window to spot hidden 65W power limits or thermal throttling, then provides an exact BIOS checklist for your motherboard vendor.</p>
+            </div>
+            <div class="tool-col">
+              <h3>Local match log reader and Pre-Match Boost</h3>
+              <p>Reads VALORANT <code>ShooterGame.log</code> files directly on your PC with zero cloud uploads, closes heavy browsers or launchers before you queue, and checks GitHub Releases automatically for updates.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: DOWNLOAD & SIGNPATH COMPLIANCE -->
+      <section id="download" class="tab-view" role="tabpanel" aria-label="Download">
+        <div class="view-inner download-layout">
+          <div class="download-main">
+            <h2>Download BareFrame Beta (v0.1.3)</h2>
             <p class="section-lead">
-              Every optimization uses documented Windows APIs and adapts to the game profile you select on first launch. Open any row to read the exact registry keys, commands, and rollback behavior from <code>src/engine/tweaks.js</code>.
+              Use the Windows installer for Start Menu shortcuts and automatic in-app updates, or grab the portable binary to run directly from any folder.
             </p>
-          </div>
-          <div class="filter-group" id="tweak-filters" role="group" aria-label="Filter optimizations">
-            <div class="filter-pill" id="filter-pill" aria-hidden="true"></div>
-            <button type="button" class="filter-chip active" data-cat="all">All (12)</button>
-            <button type="button" class="filter-chip" data-cat="Kernel & CPU">Kernel &amp; CPU</button>
-            <button type="button" class="filter-chip" data-cat="Power & Hardware">Power &amp; hardware</button>
-            <button type="button" class="filter-chip" data-cat="Network & Memory">Network &amp; memory</button>
-            <button type="button" class="filter-chip" data-cat="Gaming & Opt-In">Game &amp; opt-in</button>
-          </div>
-        </div>
 
-        <div id="manifest-rows" class="manifest-list"></div>
+            <div class="download-actions">
+              <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary">
+                Download installer (BareFrame-Setup.exe)
+              </a>
+              <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Portable.exe" class="btn btn-secondary">
+                Download portable (BareFrame-Portable.exe)
+              </a>
+            </div>
 
-        <div class="tools-prose">
-          <div class="tool-col">
-            <h3>Built-in 35-second throttle detector</h3>
-            <p>Measures sustained P-core clock speed past Intel and AMD's 28-second boost window to spot hidden 65W power limits or thermal throttling, then provides an exact BIOS checklist for your motherboard vendor.</p>
+            <div class="download-details">
+              <span>Windows 10 and 11 (64-bit)</span>
+              <span>About 76 MB</span>
+              <span>MIT open-source</span>
+              <a href="https://github.com/BareFrame/BareFrame/releases" target="_blank" rel="noopener">All releases</a>
+              <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener">Source repository</a>
+            </div>
+
+            <!-- Mandatory SignPath Foundation Attribution -->
+            <div class="signpath-block">
+              <p>
+                Free code signing provided by <a href="https://signpath.io/" target="_blank" rel="noopener">SignPath.io</a>, certificate by <a href="https://signpath.org/" target="_blank" rel="noopener">SignPath Foundation</a>. See our <a href="https://github.com/BareFrame/BareFrame/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code Signing &amp; Privacy Policy</a>.
+              </p>
+            </div>
           </div>
-          <div class="tool-col">
-            <h3>Local match log reader and Pre-Match Boost</h3>
-            <p>Reads VALORANT <code>ShooterGame.log</code> files directly on your PC with zero cloud uploads, closes heavy browsers or launchers before you queue, and checks GitHub Releases automatically for updates.</p>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- DOWNLOAD, SIGNPATH COMPLIANCE & KO-FI -->
-    <section id="download" class="section">
-      <div class="container download-layout">
-        <div class="download-main">
-          <h2>Download BareFrame Beta (v0.1.3)</h2>
-          <p class="section-lead">
-            Use the Windows installer for Start Menu shortcuts and automatic in-app updates, or grab the portable binary to run directly from any folder.
-          </p>
-
-          <div class="download-actions">
-            <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Setup.exe" class="btn btn-primary">
-              Download installer (BareFrame-Setup.exe)
+          <aside class="support-column">
+            <h3>Free forever, no paid tiers</h3>
+            <p>
+              BareFrame has no accounts, subscriptions, or locked tweak packs. If it smoothed out your frame times and you want to support ongoing hardware testing and signing costs, Ko-fi takes a 0% platform fee.
+            </p>
+            <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="btn btn-cobalt">
+              Support on Ko-fi
             </a>
-            <a href="https://github.com/bareframe/BareFrame/releases/latest/download/BareFrame-Portable.exe" class="btn btn-secondary">
-              Download portable (BareFrame-Portable.exe)
-            </a>
+          </aside>
+        </div>
+      </section>
+
+      <!-- TAB 5: QUESTIONS -->
+      <section id="questions" class="tab-view" role="tabpanel" aria-label="Questions">
+        <div class="view-inner faq-layout">
+          <div>
+            <h2>Common questions</h2>
+            <p class="section-lead">Straight answers on anti-cheats, rolling back, hardware detection, and SmartScreen.</p>
           </div>
 
-          <div class="download-details">
-            <span>Windows 10 and 11 (64-bit)</span>
-            <span>About 76 MB</span>
-            <span>MIT open-source</span>
-            <a href="https://github.com/BareFrame/BareFrame/releases" target="_blank" rel="noopener">All releases</a>
-            <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener">Source repository</a>
+          <div class="faq-list">
+            <details class="faq-item" open>
+              <summary>
+                <span>Is BareFrame safe with Vanguard, FACEIT AC, EAC, and BattlEye?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </summary>
+              <p>
+                Yes. BareFrame only edits documented Windows settings (registry keys, power plans, services, network adapter properties, and local game config files). It never installs kernel drivers, touches game memory, or disables TPM 2.0 or Secure Boot. If you opt into Bare-Metal mode (VBS and HVCI off) and your specific account prompts for Memory Integrity, click Revert All or disable Bare-Metal mode and reboot.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>
+                <span>Can I undo every change cleanly?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </summary>
+              <p>
+                Before changing any setting, BareFrame creates a Windows System Restore Point and saves timestamped registry and config copies to <code>Documents\BareFrame\backups\</code>. Clicking Revert All inside the app restores Windows defaults cleanly.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>
+                <span>Does it adapt to Intel, AMD, and laptops?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </summary>
+              <p>
+                Yes. BareFrame checks your CPU, NVIDIA or AMD GPU, RAM capacity, motherboard vendor, and battery presence at runtime. Laptops keep default dynamic tick behavior to protect battery life, and memory compression is only disabled on systems with 16 GB of RAM or more.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>
+                <span>Why might Windows SmartScreen show a warning right now?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </summary>
+              <p>
+                Windows flags new open-source binaries until a code-signing certificate is active and reputation builds. Our SignPath Foundation open-source code-signing application is underway. Every release is compiled transparently by GitHub Actions directly from the public repository.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>
+                <span>Does BareFrame keep running in the background?</span>
+                <span class="faq-icon" aria-hidden="true"></span>
+              </summary>
+              <p>
+                No. BareFrame does not install a background service, startup task, or telemetry daemon. Once you apply tweaks, close the app and the Windows settings remain active with zero background CPU or RAM overhead.
+              </p>
+            </details>
           </div>
-
-          <!-- Mandatory SignPath Foundation Attribution -->
-          <div class="signpath-block">
-            <p>
-              Free code signing provided by <a href="https://signpath.io/" target="_blank" rel="noopener">SignPath.io</a>, certificate by <a href="https://signpath.org/" target="_blank" rel="noopener">SignPath Foundation</a>. See our <a href="https://github.com/BareFrame/BareFrame/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code Signing &amp; Privacy Policy</a>.
-            </p>
-          </div>
         </div>
-
-        <aside class="support-column">
-          <h3>Free forever, no paid tiers</h3>
-          <p>
-            BareFrame has no accounts, subscriptions, or locked tweak packs. If it smoothed out your frame times and you want to support ongoing hardware testing and signing costs, Ko-fi takes a 0% platform fee.
-          </p>
-          <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener" class="btn btn-cobalt">
-            Support on Ko-fi
-          </a>
-        </aside>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section id="questions" class="section section-alt">
-      <div class="container faq-layout">
-        <div>
-          <h2>Common questions</h2>
-          <p class="section-lead">Straight answers on anti-cheats, rolling back, hardware detection, and SmartScreen.</p>
-        </div>
-
-        <div class="faq-list">
-          <details class="faq-item" open>
-            <summary>
-              <span>Is BareFrame safe with Vanguard, FACEIT AC, EAC, and BattlEye?</span>
-              <span class="faq-icon" aria-hidden="true"></span>
-            </summary>
-            <p>
-              Yes. BareFrame only edits documented Windows settings (registry keys, power plans, services, network adapter properties, and local game config files). It never installs kernel drivers, touches game memory, or disables TPM 2.0 or Secure Boot. If you opt into Bare-Metal mode (VBS and HVCI off) and your specific account prompts for Memory Integrity, click Revert All or disable Bare-Metal mode and reboot.
-            </p>
-          </details>
-
-          <details class="faq-item">
-            <summary>
-              <span>Can I undo every change cleanly?</span>
-              <span class="faq-icon" aria-hidden="true"></span>
-            </summary>
-            <p>
-              Before changing any setting, BareFrame creates a Windows System Restore Point and saves timestamped registry and config copies to <code>Documents\BareFrame\backups\</code>. Clicking Revert All inside the app restores Windows defaults cleanly.
-            </p>
-          </details>
-
-          <details class="faq-item">
-            <summary>
-              <span>Does it adapt to Intel, AMD, and laptops?</span>
-              <span class="faq-icon" aria-hidden="true"></span>
-            </summary>
-            <p>
-              Yes. BareFrame checks your CPU, NVIDIA or AMD GPU, RAM capacity, motherboard vendor, and battery presence at runtime. Laptops keep default dynamic tick behavior to protect battery life, and memory compression is only disabled on systems with 16 GB of RAM or more.
-            </p>
-          </details>
-
-          <details class="faq-item">
-            <summary>
-              <span>Why might Windows SmartScreen show a warning right now?</span>
-              <span class="faq-icon" aria-hidden="true"></span>
-            </summary>
-            <p>
-              Windows flags new open-source binaries until a code-signing certificate is active and reputation builds. Our SignPath Foundation open-source code-signing application is underway. Every release is compiled transparently by GitHub Actions directly from the public repository.
-            </p>
-          </details>
-
-          <details class="faq-item">
-            <summary>
-              <span>Does BareFrame keep running in the background?</span>
-              <span class="faq-icon" aria-hidden="true"></span>
-            </summary>
-            <p>
-              No. BareFrame does not install a background service, startup task, or telemetry daemon. Once you apply tweaks, close the app and the Windows settings remain active with zero background CPU or RAM overhead.
-            </p>
-          </details>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="container footer-inner">
-      <span>BareFrame, open-source under the MIT license</span>
-      <div class="footer-links">
-        <a href="https://github.com/BareFrame/BareFrame" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/BareFrame/BareFrame/releases" target="_blank" rel="noopener">Releases</a>
-        <a href="https://github.com/BareFrame/BareFrame/blob/main/CODE_SIGNING_POLICY.md" target="_blank" rel="noopener">Code Signing &amp; Privacy</a>
-        <a href="https://ko-fi.com/bareframe" target="_blank" rel="noopener">Ko-fi</a>
-        <a href="#top">Back to top</a>
-      </div>
-    </div>
-  </footer>
+      </section>
+    </main>
+  </div>
 
   <script src="app.js"></script>
 </body>
